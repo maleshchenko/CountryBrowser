@@ -6,6 +6,11 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0000000000000000000000A1 /* CountryData in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C1 /* CountryData */; };
+		0000000000000000000000A2 /* CountryUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C2 /* CountryUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* MyApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -22,6 +27,8 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				0000000000000000000000A1 /* CountryData in Frameworks */,
+				0000000000000000000000A2 /* CountryUI in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -63,6 +70,10 @@
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* MyApp.app */;
 			productType = "com.apple.product-type.application";
+			packageProductDependencies = (
+				0000000000000000000000C1 /* CountryData */,
+				0000000000000000000000C2 /* CountryUI */,
+			);
 		};
 /* End PBXNativeTarget section */
 
@@ -95,8 +106,34 @@
 			targets = (
 				000000000000000100000000 /* MyApp */,
 			);
+			packageReferences = (
+				0000000000000000000000B1 /* CountryData */,
+				0000000000000000000000B2 /* CountryUI */,
+			);
 		};
 /* End PBXProject section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0000000000000000000000B1 /* CountryData */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = CountryData;
+		};
+		0000000000000000000000B2 /* CountryUI */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = CountryUI;
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0000000000000000000000C1 /* CountryData */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CountryData;
+		};
+		0000000000000000000000C2 /* CountryUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CountryUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		000000000000000140000000 /* Resources */ = {
