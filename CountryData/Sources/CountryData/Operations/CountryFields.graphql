@@ -1,0 +1,15 @@
+fragment CountryFields on Country {
+  code
+  name
+  emoji
+  capital
+  currencies
+  continent {
+    code
+    name
+  }
+  languages {
+    code
+    name
+  }
+}
