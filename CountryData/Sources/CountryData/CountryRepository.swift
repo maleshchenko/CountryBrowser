@@ -12,9 +12,9 @@ public enum CountryRepositoryError: Error, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .missingResponse:
-            "The server returned no country data."
-        case .graphQLErrors(let messages):
-            messages.joined(separator: "\n")
+            String(localized: "country.error.missingResponse", bundle: .module)
+        case .graphQLErrors:
+            String(localized: "country.error.graphQL", bundle: .module)
         }
     }
 }

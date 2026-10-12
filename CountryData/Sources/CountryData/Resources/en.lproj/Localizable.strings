@@ -1,0 +1,2 @@
+"country.error.graphQL" = "The country service returned an error.";
+"country.error.missingResponse" = "The country service returned no data.";

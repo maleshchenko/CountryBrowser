@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "CountryUI",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "CountryUI", targets: ["CountryUI"])
@@ -14,6 +15,7 @@ let package = Package(
         .target(
             name: "CountryUI",
             dependencies: ["CountryData"],
+            resources: [.process("Resources")],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
         .testTarget(

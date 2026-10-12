@@ -55,7 +55,7 @@ public final class CountryListViewModel {
             return
         } catch {
             guard activeRequest == request else { return }
-            state = .failed(error.localizedDescription)
+            state = .failed(String(localized: "countries.error.load", bundle: .module))
         }
     }
 }

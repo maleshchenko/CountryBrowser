@@ -25,12 +25,12 @@ public final class CountryDetailViewModel {
         state = .loading
         do {
             guard let country = try await repository.country(withCode: countryCode) else {
-                state = .failed("Country details could not be found.")
+                state = .failed(String(localized: "country.error.notFound", bundle: .module))
                 return
             }
             state = .loaded(country)
         } catch {
-            state = .failed(error.localizedDescription)
+            state = .failed(String(localized: "country.error.load", bundle: .module))
         }
     }
 }

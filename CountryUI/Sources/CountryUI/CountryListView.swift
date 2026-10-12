@@ -14,18 +14,34 @@ struct CountryListView: View {
         Group {
             switch viewModel.state {
             case .idle, .loading:
-                ProgressView("Loading countries…")
+                ProgressView {
+                    Text("countries.loading", bundle: .module)
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
-                ContentUnavailableView.search(text: viewModel.searchText)
+                ContentUnavailableView {
+                    Label {
+                        Text("countries.empty.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                } description: {
+                    Text("countries.empty.description", bundle: .module)
+                }
             case .failed(let message):
                 ContentUnavailableView {
-                    Label("Countries unavailable", systemImage: "wifi.exclamationmark")
+                    Label {
+                        Text("countries.unavailable.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "wifi.exclamationmark")
+                    }
                 } description: {
                     Text(message)
                 } actions: {
-                    Button("Try Again") {
+                    Button {
                         Task { await viewModel.load() }
+                    } label: {
+                        Text("action.retry", bundle: .module)
                     }
                 }
             case .loaded(let countries):
@@ -44,13 +60,13 @@ struct CountryListView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle("Countries")
+        .navigationTitle(Text("countries.title", bundle: .module))
         .searchable(
             text: Binding(
                 get: { viewModel.searchText },
                 set: { viewModel.updateSearch($0) }
             ),
-            prompt: "Search countries"
+            prompt: Text("countries.search.prompt", bundle: .module)
         )
         .task {
             if case .idle = viewModel.state {

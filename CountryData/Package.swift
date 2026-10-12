@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "CountryData",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17)],
     products: [
         .library(name: "CountryData", targets: ["CountryData"])
@@ -19,6 +20,7 @@ let package = Package(
                 .product(name: "CountriesAPI", package: "generated")
             ],
             exclude: ["Generated", "Operations"],
+            resources: [.process("Resources")],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
         .testTarget(

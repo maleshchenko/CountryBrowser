@@ -12,23 +12,31 @@ struct CountryDetailView: View {
         Group {
             switch viewModel.state {
             case .loading:
-                ProgressView("Loading country…")
+                ProgressView {
+                    Text("country.loading", bundle: .module)
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .failed(let message):
                 ContentUnavailableView {
-                    Label("Country unavailable", systemImage: "exclamationmark.triangle")
+                    Label {
+                        Text("country.unavailable.title", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
                 } description: {
                     Text(message)
                 } actions: {
-                    Button("Try Again") {
+                    Button {
                         Task { await viewModel.load() }
+                    } label: {
+                        Text("action.retry", bundle: .module)
                     }
                 }
             case .loaded(let country):
                 CountryDetails(country: country)
             }
         }
-        .navigationTitle("Country")
+        .navigationTitle(Text("country.title", bundle: .module))
         .task {
             if case .loading = viewModel.state {
                 await viewModel.load()
@@ -41,12 +49,14 @@ private struct CountryDetails: View {
     let country: Country
 
     private var currencies: String {
-        country.currencies.isEmpty ? "Not available" : country.currencies.joined(separator: ", ")
+        country.currencies.isEmpty
+            ? String(localized: "value.notAvailable", bundle: .module)
+            : country.currencies.joined(separator: ", ")
     }
 
     private var languages: String {
         country.languages.isEmpty
-            ? "Not available"
+            ? String(localized: "value.notAvailable", bundle: .module)
             : country.languages.map(\.name).joined(separator: ", ")
     }
 
@@ -67,11 +77,29 @@ private struct CountryDetails: View {
                 .listRowBackground(Color.clear)
             }
 
-            Section("Country information") {
-                LabeledContent("Capital", value: country.capital ?? "Not available")
-                LabeledContent("Currency", value: currencies)
-                LabeledContent("Languages", value: languages)
-                LabeledContent("Continent", value: country.continentName)
+            Section {
+                LabeledContent {
+                    Text(country.capital ?? String(localized: "value.notAvailable", bundle: .module))
+                } label: {
+                    Text("country.capital", bundle: .module)
+                }
+                LabeledContent {
+                    Text(currencies)
+                } label: {
+                    Text("country.currency", bundle: .module)
+                }
+                LabeledContent {
+                    Text(languages)
+                } label: {
+                    Text("country.languages", bundle: .module)
+                }
+                LabeledContent {
+                    Text(country.continentName)
+                } label: {
+                    Text("country.continent", bundle: .module)
+                }
+            } header: {
+                Text("country.information", bundle: .module)
             }
         }
         .listStyle(.automatic)
