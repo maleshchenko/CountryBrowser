@@ -1,17 +1,11 @@
+import CountryData
+import CountryUI
 import SwiftUI
-import Playgrounds
 
 struct ContentView: View {
+    private let repository = ApolloCountryRepository()
+
     var body: some View {
-        Text("Hello, world!")
-            .padding()
+        CountriesRootView(repository: repository)
     }
-}
-
-#Preview {
-    ContentView()
-}
-
-#Playground {
-    _ = 1 + 2
 }
