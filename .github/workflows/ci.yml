@@ -1,0 +1,42 @@
+name: Swift CI
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: swift-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Tests and code quality
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint and SwiftFormat
+        run: brew install swiftlint swiftformat
+
+      - name: Test CountryData package
+        run: swift test --package-path CountryData
+
+      - name: Test CountryUI package
+        run: swift test --package-path CountryUI
+
+      - name: Lint Swift source
+        run: |
+          swiftlint lint --strict --config .swiftlint.yml \
+            MyApp CountryData/Sources/CountryData CountryData/Tests \
+            CountryUI/Sources CountryUI/Tests
+
+      - name: Check Swift formatting
+        run: |
+          swiftformat --lint --config .swiftformat \
+            MyApp CountryData/Sources/CountryData CountryData/Tests \
+            CountryUI/Sources CountryUI/Tests
