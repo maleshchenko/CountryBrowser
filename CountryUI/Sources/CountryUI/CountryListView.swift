@@ -89,6 +89,7 @@ struct CountryListView: View {
                     Text("action.retry", bundle: .module)
                 }
             }
+            .countryUnavailableStyle()
         case let .loaded(countries):
             List(selection: Binding(
                 get: { selection },

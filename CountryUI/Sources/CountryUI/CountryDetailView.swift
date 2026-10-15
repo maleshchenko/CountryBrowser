@@ -52,6 +52,7 @@ struct CountryDetailView: View {
                     Text("action.retry", bundle: .module)
                 }
             }
+            .countryUnavailableStyle()
         case let .loaded(country):
             CountryDetails(country: country)
                 .refreshable {
