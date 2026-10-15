@@ -1,8 +1,9 @@
-import Testing
 @testable import CountryData
+import Testing
 
 struct CountryMapperTests {
-    @Test func mapsCountryResponseToDomainModel() {
+    @Test
+    func mapsCountryResponseToDomainModel() {
         let response = CountryResponse(
             code: "JP",
             name: "Japan",

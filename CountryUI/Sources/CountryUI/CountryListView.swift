@@ -17,7 +17,7 @@ struct CountryListView: View {
                 ProgressView {
                     Text("countries.loading", bundle: .module)
                 }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 ContentUnavailableView {
                     Label {
@@ -28,7 +28,7 @@ struct CountryListView: View {
                 } description: {
                     Text("countries.empty.description", bundle: .module)
                 }
-            case .failed(let message):
+            case let .failed(message):
                 ContentUnavailableView {
                     Label {
                         Text("countries.unavailable.title", bundle: .module)
@@ -44,7 +44,7 @@ struct CountryListView: View {
                         Text("action.retry", bundle: .module)
                     }
                 }
-            case .loaded(let countries):
+            case let .loaded(countries):
                 List(countries) { country in
                     NavigationLink {
                         CountryDetailView(

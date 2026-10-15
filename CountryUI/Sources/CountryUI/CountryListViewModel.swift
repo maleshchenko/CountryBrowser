@@ -49,12 +49,16 @@ public final class CountryListViewModel {
         state = .loading
         do {
             let countries = try await repository.countries(matching: search)
-            guard activeRequest == request else { return }
+            guard activeRequest == request else {
+                return
+            }
             state = countries.isEmpty ? .empty : .loaded(countries)
         } catch is CancellationError {
             return
         } catch {
-            guard activeRequest == request else { return }
+            guard activeRequest == request else {
+                return
+            }
             state = .failed(String(localized: "countries.error.load", bundle: .module))
         }
     }

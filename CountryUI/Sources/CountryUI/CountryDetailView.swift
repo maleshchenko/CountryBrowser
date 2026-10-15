@@ -15,8 +15,8 @@ struct CountryDetailView: View {
                 ProgressView {
                     Text("country.loading", bundle: .module)
                 }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .failed(let message):
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case let .failed(message):
                 ContentUnavailableView {
                     Label {
                         Text("country.unavailable.title", bundle: .module)
@@ -32,7 +32,7 @@ struct CountryDetailView: View {
                         Text("action.retry", bundle: .module)
                     }
                 }
-            case .loaded(let country):
+            case let .loaded(country):
                 CountryDetails(country: country)
             }
         }
@@ -79,7 +79,10 @@ private struct CountryDetails: View {
 
             Section {
                 LabeledContent {
-                    Text(country.capital ?? String(localized: "value.notAvailable", bundle: .module))
+                    Text(country.capital ?? String(
+                        localized: "value.notAvailable",
+                        bundle: .module
+                    ))
                 } label: {
                     Text("country.capital", bundle: .module)
                 }

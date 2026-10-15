@@ -1,7 +1,7 @@
 import CountryData
+@testable import CountryUI
 import Foundation
 import Testing
-@testable import CountryUI
 
 private actor MockCountryRepository: CountryRepository {
     enum Result {
@@ -17,14 +17,14 @@ private actor MockCountryRepository: CountryRepository {
 
     func countries(matching search: String) async throws -> [Country] {
         switch result {
-        case .countries(let countries):
+        case let .countries(countries):
             countries.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
         case .failure:
             throw URLError(.notConnectedToInternet)
         }
     }
 
-    func country(withCode code: String) async throws -> Country? {
+    func country(withCode _: String) async throws -> Country? {
         nil
     }
 }
@@ -42,7 +42,8 @@ struct CountryListViewModelTests {
         languages: []
     )
 
-    @Test func loadsCountriesSuccessfully() async {
+    @Test
+    func loadsCountriesSuccessfully() async {
         let viewModel = CountryListViewModel(
             repository: MockCountryRepository(result: .countries([japan]))
         )
@@ -52,7 +53,8 @@ struct CountryListViewModelTests {
         #expect(viewModel.state == .loaded([japan]))
     }
 
-    @Test func reportsEmptyResults() async {
+    @Test
+    func reportsEmptyResults() async {
         let viewModel = CountryListViewModel(
             repository: MockCountryRepository(result: .countries([]))
         )
@@ -62,14 +64,15 @@ struct CountryListViewModelTests {
         #expect(viewModel.state == .empty)
     }
 
-    @Test func reportsNetworkFailure() async {
+    @Test
+    func reportsNetworkFailure() async {
         let viewModel = CountryListViewModel(
             repository: MockCountryRepository(result: .failure)
         )
 
         await viewModel.load()
 
-        if case .failed(let message) = viewModel.state {
+        if case let .failed(message) = viewModel.state {
             #expect(!message.isEmpty)
         } else {
             Issue.record("Expected the network error state.")

@@ -31,10 +31,10 @@ public actor ApolloCountryRepository: CountryRepository {
         query: Query,
         map: @escaping (Query.Data) -> [Country]
     ) async throws -> [Country] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             client.fetch(query: query) { result in
                 switch result {
-                case .success(let graphQLResult):
+                case let .success(graphQLResult):
                     do {
                         try Self.throwIfNeeded(graphQLResult.errors)
                         guard let data = graphQLResult.data else {
@@ -44,7 +44,7 @@ public actor ApolloCountryRepository: CountryRepository {
                     } catch {
                         continuation.resume(throwing: error)
                     }
-                case .failure(let error):
+                case let .failure(error):
                     continuation.resume(throwing: error)
                 }
             }
@@ -55,7 +55,7 @@ public actor ApolloCountryRepository: CountryRepository {
         try await withCheckedThrowingContinuation { continuation in
             client.fetch(query: CountryQuery(code: code)) { result in
                 switch result {
-                case .success(let graphQLResult):
+                case let .success(graphQLResult):
                     do {
                         try Self.throwIfNeeded(graphQLResult.errors)
                         guard let data = graphQLResult.data else {
@@ -73,7 +73,7 @@ public actor ApolloCountryRepository: CountryRepository {
                     } catch {
                         continuation.resume(throwing: error)
                     }
-                case .failure(let error):
+                case let .failure(error):
                     continuation.resume(throwing: error)
                 }
             }
@@ -81,7 +81,9 @@ public actor ApolloCountryRepository: CountryRepository {
     }
 
     nonisolated private static func throwIfNeeded(_ errors: [GraphQLError]?) throws {
-        guard let errors, !errors.isEmpty else { return }
+        guard let errors, !errors.isEmpty else {
+            return
+        }
         throw CountryRepositoryError.graphQLErrors(errors.map(\.localizedDescription))
     }
 

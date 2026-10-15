@@ -10,7 +10,9 @@ public struct Country: Identifiable, Hashable, Sendable {
     public let continentName: String
     public let languages: [CountryLanguage]
 
-    public var id: String { code }
+    public var id: String {
+        code
+    }
 
     public init(
         code: String,
