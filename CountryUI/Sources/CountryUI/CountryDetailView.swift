@@ -2,44 +2,62 @@ import CountryData
 import SwiftUI
 
 struct CountryDetailView: View {
-    @State private var viewModel: CountryDetailViewModel
+    @Environment(\.countryRepository)
+    private var repository
+    @State private var viewModel: CountryDetailViewModel?
+    private let country: Country
 
-    init(viewModel: CountryDetailViewModel) {
-        _viewModel = State(initialValue: viewModel)
+    init(country: Country) {
+        self.country = country
     }
 
     var body: some View {
         Group {
-            switch viewModel.state {
-            case .loading:
-                ProgressView {
-                    Text("country.loading", bundle: .module)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case let .failed(message):
-                ContentUnavailableView {
-                    Label {
-                        Text("country.unavailable.title", bundle: .module)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle")
-                    }
-                } description: {
-                    Text(message)
-                } actions: {
-                    Button {
-                        Task { await viewModel.refresh() }
-                    } label: {
-                        Text("action.retry", bundle: .module)
-                    }
-                }
-            case let .loaded(country):
+            if let viewModel {
+                content(for: viewModel)
+            } else {
                 CountryDetails(country: country)
-                    .refreshable {
-                        await viewModel.refresh()
-                    }
             }
         }
         .navigationTitle(Text("country.title", bundle: .module))
+        .task {
+            guard viewModel == nil else {
+                return
+            }
+            viewModel = CountryDetailViewModel(country: country, repository: repository)
+        }
+    }
+
+    @ViewBuilder
+    private func content(for viewModel: CountryDetailViewModel) -> some View {
+        switch viewModel.state {
+        case .loading:
+            ProgressView {
+                Text("country.loading", bundle: .module)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case let .failed(message):
+            ContentUnavailableView {
+                Label {
+                    Text("country.unavailable.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                }
+            } description: {
+                Text(message)
+            } actions: {
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Text("action.retry", bundle: .module)
+                }
+            }
+        case let .loaded(country):
+            CountryDetails(country: country)
+                .refreshable {
+                    await viewModel.refresh()
+                }
+        }
     }
 }
 

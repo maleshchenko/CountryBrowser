@@ -2,76 +2,33 @@ import CountryData
 import SwiftUI
 
 struct CountryListView: View {
-    @State private var viewModel: CountryListViewModel
+    @Environment(\.countryRepository)
+    private var repository
+    @State private var viewModel: CountryListViewModel?
     @Binding private var selection: String?
     private let onSelectCountry: (Country?) -> Void
 
     init(
-        viewModel: CountryListViewModel,
         selection: Binding<String?>,
         onSelectCountry: @escaping (Country?) -> Void
     ) {
-        _viewModel = State(initialValue: viewModel)
         _selection = selection
         self.onSelectCountry = onSelectCountry
     }
 
     var body: some View {
         Group {
-            switch viewModel.state {
-            case .idle, .loading:
+            if let viewModel {
+                content(for: viewModel)
+            } else {
                 ProgressView {
                     Text("countries.loading", bundle: .module)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                ContentUnavailableView {
-                    Label {
-                        Text("countries.empty.title", bundle: .module)
-                    } icon: {
-                        Image(systemName: "magnifyingglass")
-                    }
-                } description: {
-                    Text("countries.empty.description", bundle: .module)
-                }
-            case let .failed(message):
-                ContentUnavailableView {
-                    Label {
-                        Text("countries.unavailable.title", bundle: .module)
-                    } icon: {
-                        Image(systemName: "wifi.exclamationmark")
-                    }
-                } description: {
-                    Text(message)
-                } actions: {
-                    Button {
-                        Task { await viewModel.load() }
-                    } label: {
-                        Text("action.retry", bundle: .module)
-                    }
-                }
-            case let .loaded(countries):
-                List(selection: Binding(
-                    get: { selection },
-                    set: { newSelection in
-                        selection = newSelection
-                        onSelectCountry(countries.first { $0.code == newSelection })
-                    }
-                )) {
-                    ForEach(countries) { country in
-                        NavigationLink(value: country.code) {
-                            CountryRow(country: country)
-                        }
-                    }
-                }
-                .listStyle(.plain)
-                .refreshable {
-                    await viewModel.refresh()
-                }
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            if viewModel.isShowingStaleData {
+            if viewModel?.isShowingStaleData == true {
                 Text("countries.stale.notice", bundle: .module)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -83,14 +40,72 @@ struct CountryListView: View {
         .navigationTitle(Text("countries.title", bundle: .module))
         .searchable(
             text: Binding(
-                get: { viewModel.searchText },
-                set: { viewModel.updateSearch($0) }
+                get: { viewModel?.searchText ?? "" },
+                set: { viewModel?.updateSearch($0) }
             ),
             prompt: Text("countries.search.prompt", bundle: .module)
         )
         .task {
-            if case .idle = viewModel.state {
-                await viewModel.load()
+            guard viewModel == nil else {
+                return
+            }
+            let model = CountryListViewModel(repository: repository)
+            viewModel = model
+            await model.load()
+        }
+    }
+
+    @ViewBuilder
+    private func content(for viewModel: CountryListViewModel) -> some View {
+        switch viewModel.state {
+        case .idle, .loading:
+            ProgressView {
+                Text("countries.loading", bundle: .module)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .empty:
+            ContentUnavailableView {
+                Label {
+                    Text("countries.empty.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "magnifyingglass")
+                }
+            } description: {
+                Text("countries.empty.description", bundle: .module)
+            }
+        case let .failed(message):
+            ContentUnavailableView {
+                Label {
+                    Text("countries.unavailable.title", bundle: .module)
+                } icon: {
+                    Image(systemName: "wifi.exclamationmark")
+                }
+            } description: {
+                Text(message)
+            } actions: {
+                Button {
+                    Task { await viewModel.load() }
+                } label: {
+                    Text("action.retry", bundle: .module)
+                }
+            }
+        case let .loaded(countries):
+            List(selection: Binding(
+                get: { selection },
+                set: { newSelection in
+                    selection = newSelection
+                    onSelectCountry(countries.first { $0.code == newSelection })
+                }
+            )) {
+                ForEach(countries) { country in
+                    NavigationLink(value: country.code) {
+                        CountryRow(country: country)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .refreshable {
+                await viewModel.refresh()
             }
         }
     }

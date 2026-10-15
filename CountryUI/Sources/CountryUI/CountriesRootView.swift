@@ -2,19 +2,17 @@ import CountryData
 import SwiftUI
 
 public struct CountriesRootView: View {
-    private let repository: any CountryRepository
-    @State private var viewModel: CountryListViewModel
     @State private var selectedCountry: Country?
+
+    private let repository: any CountryRepository
 
     public init(repository: any CountryRepository) {
         self.repository = repository
-        _viewModel = State(initialValue: CountryListViewModel(repository: repository))
     }
 
     public var body: some View {
         NavigationSplitView {
             CountryListView(
-                viewModel: viewModel,
                 selection: Binding(
                     get: { selectedCountry?.code },
                     set: { selectedCode in
@@ -29,10 +27,7 @@ public struct CountriesRootView: View {
         } detail: {
             if let selectedCountry {
                 CountryDetailView(
-                    viewModel: CountryDetailViewModel(
-                        country: selectedCountry,
-                        repository: repository
-                    )
+                    country: selectedCountry
                 )
                 .id(selectedCountry.code)
             } else {
@@ -47,5 +42,6 @@ public struct CountriesRootView: View {
                 }
             }
         }
+        .environment(\.countryRepository, repository)
     }
 }
