@@ -64,7 +64,7 @@ public final class CountryListViewModel {
             guard activeRequest == request else {
                 return
             }
-            state = .failed(String(localized: "countries.error.load", bundle: .module))
+            state = .failed(CountryErrorPresentation.message(for: error, context: .countries))
         }
     }
 
@@ -85,7 +85,7 @@ public final class CountryListViewModel {
             guard activeRequest == request else {
                 return
             }
-            state = .failed(String(localized: "countries.error.load", bundle: .module))
+            state = .failed(CountryErrorPresentation.message(for: error, context: .countries))
         }
     }
 }

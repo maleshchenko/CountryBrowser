@@ -2,6 +2,9 @@
 "countries.empty.description" = "Try adjusting your search.";
 "countries.empty.title" = "No countries found";
 "countries.error.load" = "Could not load countries. Check your connection and try again.";
+"countries.error.graphQL" = "The country service returned an error.";
+"countries.error.missingData" = "The country service returned no data.";
+"countries.error.request" = "Could not complete the country request. Try again.";
 "countries.loading" = "Loading countries…";
 "countries.search.prompt" = "Search countries";
 "countries.title" = "Countries";
@@ -10,7 +13,10 @@
 "country.continent" = "Continent";
 "country.currency" = "Currency";
 "country.error.load" = "Could not load country details. Check your connection and try again.";
+"country.error.graphQL" = "The country service returned an error for these details.";
+"country.error.missingData" = "The country service returned no details.";
 "country.error.notFound" = "Country details could not be found.";
+"country.error.request" = "Could not complete the country detail request. Try again.";
 "country.information" = "Country information";
 "country.languages" = "Languages";
 "country.loading" = "Loading country…";

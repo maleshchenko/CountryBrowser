@@ -25,11 +25,17 @@ private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable 
     private let lock = NSLock()
     private var responses: [JSONObject]
     private let responseDelays: [TimeInterval]
+    private let failure: (any Error)?
     private var requestCount = 0
 
-    init(responses: [JSONObject], responseDelays: [TimeInterval] = []) {
+    init(
+        responses: [JSONObject],
+        responseDelays: [TimeInterval] = [],
+        failure: (any Error)? = nil
+    ) {
         self.responses = responses
         self.responseDelays = responseDelays
+        self.failure = failure
     }
 
     var numberOfRequests: Int {
@@ -47,10 +53,15 @@ private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable 
         completionHandler: @escaping (Result<GraphQLResult<Operation.Data>, any Error>) -> Void
     ) -> any Cancellable {
         lock.lock()
-        let responseIndex = min(requestCount, responses.count - 1)
+        requestCount += 1
+        if let failure {
+            lock.unlock()
+            completionHandler(.failure(failure))
+            return EmptyCancellable()
+        }
+        let responseIndex = min(requestCount - 1, responses.count - 1)
         let body = responses[responseIndex]
         let responseDelay = responseIndex < responseDelays.count ? responseDelays[responseIndex] : 0
-        requestCount += 1
         lock.unlock()
 
         do {
@@ -190,6 +201,29 @@ struct ApolloCountryRepositoryTests {
                 return
             }
             #expect(messages == ["Country service is unavailable"])
+        }
+    }
+
+    @Test
+    func classifiesAndPreservesTransportFailureDiagnostics() async throws {
+        let repository = ApolloCountryRepository(
+            networkTransport: MockNetworkTransport(
+                responses: [],
+                failure: URLError(.notConnectedToInternet)
+            )
+        )
+
+        do {
+            _ = try await repository.countries(matching: "")
+            Issue.record("Expected a network error.")
+        } catch let error as CountryRepositoryError {
+            guard case let .networkFailure(details) = error else {
+                Issue.record("Expected a network failure, got \(error).")
+                return
+            }
+            #expect(error.category == .network)
+            #expect(details.contains("NSURLErrorDomain"))
+            #expect(error.errorDescription?.contains(details) == false)
         }
     }
 

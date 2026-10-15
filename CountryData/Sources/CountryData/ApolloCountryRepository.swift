@@ -115,7 +115,7 @@ public actor ApolloCountryRepository: CountryRepository {
                         continuation.resume(throwing: error)
                     }
                 case let .failure(error):
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: Self.mapRequestError(error))
                 }
             }
         }
@@ -144,7 +144,7 @@ public actor ApolloCountryRepository: CountryRepository {
                         continuation.resume(throwing: error)
                     }
                 case let .failure(error):
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: Self.mapRequestError(error))
                 }
             }
         }
@@ -155,6 +155,21 @@ public actor ApolloCountryRepository: CountryRepository {
             return
         }
         throw CountryRepositoryError.graphQLErrors(errors.map(\.localizedDescription))
+    }
+
+    nonisolated private static func mapRequestError(_ error: any Error) -> CountryRepositoryError {
+        if let error = error as? CountryRepositoryError {
+            return error
+        }
+        if let error = error as? URLError {
+            return .networkFailure(String(reflecting: error))
+        }
+        if let sessionError = error as? URLSessionClient.URLSessionClientError {
+            if case let .networkError(_, _, underlying) = sessionError {
+                return .networkFailure(String(reflecting: underlying))
+            }
+        }
+        return .requestFailure(String(reflecting: error))
     }
 
     nonisolated private static func response(from fields: CountryFields) -> CountryResponse {

@@ -7,6 +7,7 @@ private actor MockCountryRepository: CountryRepository {
     private let countries: [Country]
     private let detailCountry: Country?
     private let shouldFail: Bool
+    private let repositoryError: CountryRepositoryError?
     private let searchDelay: Duration
     private var searchRequests: [String] = []
     private var refreshRequestCount = 0
@@ -16,11 +17,13 @@ private actor MockCountryRepository: CountryRepository {
         countries: [Country] = [],
         detailCountry: Country? = nil,
         shouldFail: Bool = false,
+        repositoryError: CountryRepositoryError? = nil,
         searchDelay: Duration = .zero
     ) {
         self.countries = countries
         self.detailCountry = detailCountry
         self.shouldFail = shouldFail
+        self.repositoryError = repositoryError
         self.searchDelay = searchDelay
     }
 
@@ -28,6 +31,9 @@ private actor MockCountryRepository: CountryRepository {
         searchRequests.append(search)
         if searchDelay > .zero {
             try await Task.sleep(for: searchDelay)
+        }
+        if let repositoryError {
+            throw repositoryError
         }
         if shouldFail {
             throw URLError(.notConnectedToInternet)
@@ -37,6 +43,9 @@ private actor MockCountryRepository: CountryRepository {
 
     func refreshCountries() async throws -> [Country] {
         refreshRequestCount += 1
+        if let repositoryError {
+            throw repositoryError
+        }
         if shouldFail {
             throw URLError(.notConnectedToInternet)
         }
@@ -45,6 +54,9 @@ private actor MockCountryRepository: CountryRepository {
 
     func country(withCode code: String) async throws -> Country? {
         detailRequests.append(code)
+        if let repositoryError {
+            throw repositoryError
+        }
         if shouldFail {
             throw URLError(.notConnectedToInternet)
         }
@@ -120,6 +132,39 @@ struct CountryListViewModelTests {
             #expect(!message.isEmpty)
         } else {
             Issue.record("Expected the network error state.")
+        }
+    }
+
+    @Test
+    func presentsGraphQLErrorWithoutExposingServerDetails() async {
+        let viewModel = CountryListViewModel(
+            repository: MockCountryRepository(
+                repositoryError: .graphQLErrors(["sensitive server diagnostic"])
+            )
+        )
+
+        await viewModel.load()
+
+        if case let .failed(message) = viewModel.state {
+            #expect(message == "The country service returned an error.")
+            #expect(!message.contains("sensitive server diagnostic"))
+        } else {
+            Issue.record("Expected the GraphQL error state.")
+        }
+    }
+
+    @Test
+    func presentsMissingDataError() async {
+        let viewModel = CountryListViewModel(
+            repository: MockCountryRepository(repositoryError: .missingResponse)
+        )
+
+        await viewModel.load()
+
+        if case let .failed(message) = viewModel.state {
+            #expect(message == "The country service returned no data.")
+        } else {
+            Issue.record("Expected the missing-data error state.")
         }
     }
 
@@ -268,6 +313,37 @@ struct CountryDetailViewModelTests {
             Issue.record("Expected the detail network error state.")
         }
         #expect(await repository.recordedDetailRequests() == ["JP"])
+    }
+
+    @Test
+    func presentsDetailGraphQLErrorWithoutExposingServerDetails() async {
+        let repository = MockCountryRepository(
+            repositoryError: .graphQLErrors(["sensitive server diagnostic"])
+        )
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
+
+        await viewModel.refresh()
+
+        if case let .failed(message) = viewModel.state {
+            #expect(message == "The country service returned an error for these details.")
+            #expect(!message.contains("sensitive server diagnostic"))
+        } else {
+            Issue.record("Expected the GraphQL error state.")
+        }
+    }
+
+    @Test
+    func presentsDetailMissingDataError() async {
+        let repository = MockCountryRepository(repositoryError: .missingResponse)
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
+
+        await viewModel.refresh()
+
+        if case let .failed(message) = viewModel.state {
+            #expect(message == "The country service returned no details.")
+        } else {
+            Issue.record("Expected the missing-data error state.")
+        }
     }
 
     @Test

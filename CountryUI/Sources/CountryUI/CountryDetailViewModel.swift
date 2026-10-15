@@ -30,8 +30,10 @@ public final class CountryDetailViewModel {
                 return
             }
             state = .loaded(country)
+        } catch is CancellationError {
+            return
         } catch {
-            state = .failed(String(localized: "country.error.load", bundle: .module))
+            state = .failed(CountryErrorPresentation.message(for: error, context: .country))
         }
     }
 }

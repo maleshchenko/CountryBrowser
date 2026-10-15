@@ -1,2 +1,4 @@
 "country.error.graphQL" = "The country service returned an error.";
 "country.error.missingResponse" = "The country service returned no data.";
+"country.error.network" = "A network error prevented the country request.";
+"country.error.request" = "The country request could not be completed.";
