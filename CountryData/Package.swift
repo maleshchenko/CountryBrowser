@@ -17,6 +17,7 @@ let package = Package(
             name: "CountryData",
             dependencies: [
                 .product(name: "Apollo", package: "apollo-ios"),
+                .product(name: "ApolloAPI", package: "apollo-ios"),
                 .product(name: "CountriesAPI", package: "generated")
             ],
             exclude: ["Generated", "Operations"],

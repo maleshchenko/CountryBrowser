@@ -9,16 +9,31 @@
 /* Begin PBXBuildFile section */
 		0000000000000000000000A1 /* CountryData in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C1 /* CountryData */; };
 		0000000000000000000000A2 /* CountryUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C2 /* CountryUI */; };
+		00000000000000000000020D /* CountryData in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C1 /* CountryData */; };
+		00000000000000000000020E /* CountryUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000000000C2 /* CountryUI */; };
+		00000000000000000000020F /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000000020A /* Apollo */; };
+		000000000000000000000210 /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000000020B /* ApolloAPI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* CountryBrowser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CountryBrowser.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000207 /* CountryBrowserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountryBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		000000000000000000000010 /* CountryBrowser */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CountryBrowser;
+			sourceTree = "<group>";
+		};
+		000000000000000000000202 /* CountryDataTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CountryData/Tests/CountryDataTests;
+			sourceTree = "<group>";
+		};
+		000000000000000000000203 /* CountryUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CountryUI/Tests/CountryUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -38,6 +53,8 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000000010 /* CountryBrowser */,
+				000000000000000000000202 /* CountryDataTests */,
+				000000000000000000000203 /* CountryUITests */,
 				000000000000000000000020 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000000120 /* CountryBrowser.app */,
+				000000000000000000000207 /* CountryBrowserTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,7 +93,53 @@
 				0000000000000000000000C2 /* CountryUI */,
 			);
 		};
+		000000000000000000000201 /* CountryBrowserTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000020C /* Build configuration list for PBXNativeTarget "CountryBrowserTests" */;
+			buildPhases = (
+				000000000000000000000204 /* Sources */,
+				000000000000000000000205 /* Frameworks */,
+				000000000000000000000206 /* Resources */,
+			);
+			dependencies = (
+				000000000000000000000214 /* PBXTargetDependency */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				000000000000000000000202 /* CountryDataTests */,
+				000000000000000000000203 /* CountryUITests */,
+			);
+			name = CountryBrowserTests;
+			packageProductDependencies = (
+				0000000000000000000000C1 /* CountryData */,
+				0000000000000000000000C2 /* CountryUI */,
+				00000000000000000000020A /* Apollo */,
+				00000000000000000000020B /* ApolloAPI */,
+			);
+			productName = CountryBrowserTests;
+			productReference = 000000000000000000000207 /* CountryBrowserTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		000000000000000000000213 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000100000000;
+			remoteInfo = CountryBrowser;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		000000000000000000000214 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000100000000 /* CountryBrowser */;
+			targetProxy = 000000000000000000000213 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		000000000000000000000000 /* Project object */ = {
@@ -105,10 +169,12 @@
 			projectRoot = "";
 			targets = (
 				000000000000000100000000 /* CountryBrowser */,
+				000000000000000000000201 /* CountryBrowserTests */,
 			);
 			packageReferences = (
 				0000000000000000000000B1 /* CountryData */,
 				0000000000000000000000B2 /* CountryUI */,
+				000000000000000000000209 /* apollo-ios */,
 			);
 		};
 /* End PBXProject section */
@@ -122,6 +188,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = CountryUI;
 		};
+		000000000000000000000209 /* apollo-ios */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apollographql/apollo-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -133,6 +207,16 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = CountryUI;
 		};
+		00000000000000000000020A /* Apollo */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 000000000000000000000209 /* apollo-ios */;
+			productName = Apollo;
+		};
+		00000000000000000000020B /* ApolloAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 000000000000000000000209 /* apollo-ios */;
+			productName = ApolloAPI;
+		};
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -140,6 +224,13 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
+		};
+		000000000000000000000206 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
@@ -149,7 +240,28 @@
 			files = (
 			);
 		};
+		000000000000000000000204 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000205 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00000000000000000000020D /* CountryData in Frameworks */,
+				00000000000000000000020E /* CountryUI in Frameworks */,
+				00000000000000000000020F /* Apollo in Frameworks */,
+				000000000000000000000210 /* ApolloAPI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "Country Browser" */ = {
@@ -206,7 +318,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -270,7 +382,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -370,6 +482,42 @@
 			};
 			name = Release;
 		};
+		000000000000000000000211 /* Debug configuration for PBXNativeTarget "CountryBrowserTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.countrybrowser.CountryBrowserTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		000000000000000000000212 /* Release configuration for PBXNativeTarget "CountryBrowserTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.countrybrowser.CountryBrowserTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -386,6 +534,14 @@
 			buildConfigurations = (
 				000000000000000111000000 /* Debug configuration for PBXNativeTarget "CountryBrowser" */,
 				000000000000000112000000 /* Release configuration for PBXNativeTarget "CountryBrowser" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000020C /* Build configuration list for PBXNativeTarget "CountryBrowserTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000211 /* Debug configuration for PBXNativeTarget "CountryBrowserTests" */,
+				000000000000000000000212 /* Release configuration for PBXNativeTarget "CountryBrowserTests" */,
 			);
 			defaultConfigurationName = Release;
 		};

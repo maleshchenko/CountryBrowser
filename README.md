@@ -44,6 +44,35 @@ xcodebuild -project "Country Browser.xcodeproj" \
   build
 ```
 
+## Run tests
+
+The shared `CountryBrowser` scheme includes the `CountryBrowserTests` logic test
+target, which compiles the existing test sources from both local packages.
+In Xcode, choose an iPhone or iPad Simulator (or **My Mac**) and select
+**Product -> Test** (Command-U) to run both packages' tests from the main scheme.
+The test target does not launch the app; tests use mocks and do not make network requests.
+
+The same tests can be run from Terminal against iPhone and iPad simulators:
+
+```sh
+xcodebuild test -project "Country Browser.xcodeproj" \
+  -scheme CountryBrowser \
+  -destination "platform=iOS Simulator,name=iPhone 18 Pro Max" \
+  CODE_SIGNING_ALLOWED=NO
+
+xcodebuild test -project "Country Browser.xcodeproj" \
+  -scheme CountryBrowser \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch" \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+The package suites can also be run independently from Terminal:
+
+```sh
+swift test --package-path CountryData
+swift test --package-path CountryUI
+```
+
 
 ## Swift quality tools
 
