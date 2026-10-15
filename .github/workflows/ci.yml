@@ -36,6 +36,13 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO build
 
+      - name: Build macOS app
+        run: |
+          xcodebuild -project "Country Browser.xcodeproj" \
+            -scheme CountryBrowser \
+            -destination "generic/platform=macOS" \
+            CODE_SIGNING_ALLOWED=NO build
+
       - name: Lint Swift source
         run: |
           swiftlint lint --strict --config .swiftlint.yml \
