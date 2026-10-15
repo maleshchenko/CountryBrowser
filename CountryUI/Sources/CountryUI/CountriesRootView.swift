@@ -29,11 +29,15 @@ public struct CountriesRootView: View {
                 )
                 .id(selectedCountryCode)
             } else {
-                ContentUnavailableView(
-                    "country.selection.prompt",
-                    systemImage: "globe.americas",
-                    description: Text("country.selection.description", bundle: .module)
-                )
+                ContentUnavailableView {
+                    Label {
+                        Text("country.selection.prompt", bundle: .module)
+                    } icon: {
+                        Image(systemName: "globe.americas")
+                    }
+                } description: {
+                    Text("country.selection.description", bundle: .module)
+                }
             }
         }
     }
