@@ -3,17 +3,17 @@ import SwiftUI
 
 struct CountryListView: View {
     @State private var viewModel: CountryListViewModel
-    private let repository: any CountryRepository
     @Binding private var selection: String?
+    private let onSelectCountry: (Country?) -> Void
 
     init(
         viewModel: CountryListViewModel,
-        repository: any CountryRepository,
-        selection: Binding<String?>
+        selection: Binding<String?>,
+        onSelectCountry: @escaping (Country?) -> Void
     ) {
         _viewModel = State(initialValue: viewModel)
-        self.repository = repository
         _selection = selection
+        self.onSelectCountry = onSelectCountry
     }
 
     var body: some View {
@@ -51,7 +51,13 @@ struct CountryListView: View {
                     }
                 }
             case let .loaded(countries):
-                List(selection: $selection) {
+                List(selection: Binding(
+                    get: { selection },
+                    set: { newSelection in
+                        selection = newSelection
+                        onSelectCountry(countries.first { $0.code == newSelection })
+                    }
+                )) {
                     ForEach(countries) { country in
                         NavigationLink(value: country.code) {
                             CountryRow(country: country)

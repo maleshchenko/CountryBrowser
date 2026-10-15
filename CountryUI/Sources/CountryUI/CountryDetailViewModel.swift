@@ -13,18 +13,19 @@ public final class CountryDetailViewModel {
 
     public private(set) var state: State = .loading
 
-    @ObservationIgnored private let countryCode: String
+    @ObservationIgnored private let country: Country
     @ObservationIgnored private let repository: any CountryRepository
 
-    public init(countryCode: String, repository: any CountryRepository) {
-        self.countryCode = countryCode
+    public init(country: Country, repository: any CountryRepository) {
+        self.country = country
         self.repository = repository
+        state = .loaded(country)
     }
 
-    public func load() async {
+    public func refresh() async {
         state = .loading
         do {
-            guard let country = try await repository.country(withCode: countryCode) else {
+            guard let country = try await repository.country(withCode: country.code) else {
                 state = .failed(String(localized: "country.error.notFound", bundle: .module))
                 return
             }

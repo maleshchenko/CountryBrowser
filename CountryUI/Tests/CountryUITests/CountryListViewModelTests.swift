@@ -194,22 +194,40 @@ struct CountryDetailViewModelTests {
 
     @Test
     func loadsCountryDetails() async {
-        let repository = MockCountryRepository(detailCountry: japan)
-        let viewModel = CountryDetailViewModel(countryCode: "JP", repository: repository)
-
-        #expect(viewModel.state == .loading)
-        await viewModel.load()
+        let repository = MockCountryRepository()
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
 
         #expect(viewModel.state == .loaded(japan))
+        #expect(await repository.recordedDetailRequests().isEmpty)
+    }
+
+    @Test
+    func refreshesCountryDetails() async {
+        let refreshedJapan = Country(
+            code: "JP",
+            name: "Japan",
+            flag: "🇯🇵",
+            capital: "Kyoto",
+            currencies: ["JPY"],
+            continentCode: "AS",
+            continentName: "Asia",
+            languages: []
+        )
+        let repository = MockCountryRepository(detailCountry: refreshedJapan)
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
+
+        await viewModel.refresh()
+
+        #expect(viewModel.state == .loaded(refreshedJapan))
         #expect(await repository.recordedDetailRequests() == ["JP"])
     }
 
     @Test
     func reportsDetailNetworkFailure() async {
         let repository = MockCountryRepository(shouldFail: true)
-        let viewModel = CountryDetailViewModel(countryCode: "JP", repository: repository)
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
 
-        await viewModel.load()
+        await viewModel.refresh()
 
         if case let .failed(message) = viewModel.state {
             #expect(!message.isEmpty)
@@ -222,9 +240,9 @@ struct CountryDetailViewModelTests {
     @Test
     func reportsMissingCountryDetails() async {
         let repository = MockCountryRepository()
-        let viewModel = CountryDetailViewModel(countryCode: "XX", repository: repository)
+        let viewModel = CountryDetailViewModel(country: japan, repository: repository)
 
-        await viewModel.load()
+        await viewModel.refresh()
 
         if case let .failed(message) = viewModel.state {
             #expect(!message.isEmpty)

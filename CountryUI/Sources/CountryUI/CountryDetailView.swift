@@ -27,21 +27,19 @@ struct CountryDetailView: View {
                     Text(message)
                 } actions: {
                     Button {
-                        Task { await viewModel.load() }
+                        Task { await viewModel.refresh() }
                     } label: {
                         Text("action.retry", bundle: .module)
                     }
                 }
             case let .loaded(country):
                 CountryDetails(country: country)
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
             }
         }
         .navigationTitle(Text("country.title", bundle: .module))
-        .task {
-            if case .loading = viewModel.state {
-                await viewModel.load()
-            }
-        }
     }
 }
 
