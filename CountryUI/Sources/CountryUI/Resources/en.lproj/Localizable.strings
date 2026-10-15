@@ -14,6 +14,8 @@
 "country.information" = "Country information";
 "country.languages" = "Languages";
 "country.loading" = "Loading country…";
+"country.selection.description" = "Choose a country from the list to see its details.";
+"country.selection.prompt" = "Select a Country";
 "country.title" = "Country";
 "country.unavailable.title" = "Country unavailable";
 "value.notAvailable" = "Not available";

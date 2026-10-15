@@ -4,10 +4,16 @@ import SwiftUI
 struct CountryListView: View {
     @State private var viewModel: CountryListViewModel
     private let repository: any CountryRepository
+    @Binding private var selection: String?
 
-    init(viewModel: CountryListViewModel, repository: any CountryRepository) {
+    init(
+        viewModel: CountryListViewModel,
+        repository: any CountryRepository,
+        selection: Binding<String?>
+    ) {
         _viewModel = State(initialValue: viewModel)
         self.repository = repository
+        _selection = selection
     }
 
     var body: some View {
@@ -45,16 +51,11 @@ struct CountryListView: View {
                     }
                 }
             case let .loaded(countries):
-                List(countries) { country in
-                    NavigationLink {
-                        CountryDetailView(
-                            viewModel: CountryDetailViewModel(
-                                countryCode: country.code,
-                                repository: repository
-                            )
-                        )
-                    } label: {
-                        CountryRow(country: country)
+                List(selection: $selection) {
+                    ForEach(countries) { country in
+                        NavigationLink(value: country.code) {
+                            CountryRow(country: country)
+                        }
                     }
                 }
                 .listStyle(.plain)
