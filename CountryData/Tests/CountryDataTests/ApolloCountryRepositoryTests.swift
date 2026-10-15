@@ -4,13 +4,32 @@ import ApolloAPI
 import Foundation
 import Testing
 
+private final class DelayedResponse: @unchecked Sendable {
+    private let deliver: () -> Void
+
+    init<Data: RootSelectionSet>(
+        result: GraphQLResult<Data>,
+        completionHandler: @escaping (Result<GraphQLResult<Data>, any Error>) -> Void
+    ) {
+        deliver = {
+            completionHandler(.success(result))
+        }
+    }
+
+    func send() {
+        deliver()
+    }
+}
+
 private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var responses: [JSONObject]
+    private let responseDelays: [TimeInterval]
     private var requestCount = 0
 
-    init(responses: [JSONObject]) {
+    init(responses: [JSONObject], responseDelays: [TimeInterval] = []) {
         self.responses = responses
+        self.responseDelays = responseDelays
     }
 
     var numberOfRequests: Int {
@@ -24,12 +43,13 @@ private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable 
         cachePolicy _: CachePolicy,
         contextIdentifier _: UUID?,
         context _: (any RequestContext)?,
-        callbackQueue _: DispatchQueue,
+        callbackQueue: DispatchQueue,
         completionHandler: @escaping (Result<GraphQLResult<Operation.Data>, any Error>) -> Void
     ) -> any Cancellable {
         lock.lock()
         let responseIndex = min(requestCount, responses.count - 1)
         let body = responses[responseIndex]
+        let responseDelay = responseIndex < responseDelays.count ? responseDelays[responseIndex] : 0
         requestCount += 1
         lock.unlock()
 
@@ -39,7 +59,17 @@ private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable 
                 body: body
             )
             let (result, _) = try response.parseResult()
-            completionHandler(.success(result))
+            if responseDelay > 0 {
+                let delayedResponse = DelayedResponse(
+                    result: result,
+                    completionHandler: completionHandler
+                )
+                callbackQueue.asyncAfter(deadline: .now() + responseDelay) {
+                    delayedResponse.send()
+                }
+            } else {
+                completionHandler(.success(result))
+            }
         } catch {
             completionHandler(.failure(error))
         }
@@ -109,6 +139,19 @@ private func countryListResponse(japanName: String = "Japan") throws -> JSONObje
             ]
         ]
     )
+}
+
+private func waitForRequestCount(
+    _ expectedCount: Int,
+    transport: MockNetworkTransport
+) async throws -> Bool {
+    for _ in 0 ..< 100 {
+        if transport.numberOfRequests >= expectedCount {
+            return true
+        }
+        try await Task.sleep(for: .milliseconds(10))
+    }
+    return transport.numberOfRequests >= expectedCount
 }
 
 struct ApolloCountryRepositoryTests {
@@ -202,6 +245,90 @@ struct ApolloCountryRepositoryTests {
         #expect(firstFetch.first?.name == "Japan")
         #expect(secondFetch.first?.name == "Nippon")
         #expect(transport.numberOfRequests == 2)
+    }
+
+    @Test
+    func coalescesConcurrentCountryRequests() async throws {
+        let transport = try MockNetworkTransport(
+            responses: [countryListResponse()],
+            responseDelays: [0.1]
+        )
+        let repository = ApolloCountryRepository(networkTransport: transport)
+
+        let results = try await withThrowingTaskGroup(of: [Country].self) { group in
+            for _ in 0 ..< 5 {
+                group.addTask {
+                    try await repository.countries(matching: "")
+                }
+            }
+
+            var results: [[Country]] = []
+            for try await result in group {
+                results.append(result)
+            }
+            return results
+        }
+
+        #expect(results.count == 5)
+        #expect(results.allSatisfy { $0.map(\.code) == ["JP", "CA"] })
+        #expect(transport.numberOfRequests == 1)
+    }
+
+    @Test
+    func refreshSupersedesInflightCountryRequestWithoutCachingItsResult() async throws {
+        let transport = try MockNetworkTransport(
+            responses: [
+                countryListResponse(),
+                countryListResponse(japanName: "Nippon")
+            ],
+            responseDelays: [0.2, 0.05]
+        )
+        let repository = ApolloCountryRepository(networkTransport: transport)
+        let initialRequest = Task {
+            try await repository.countries(matching: "")
+        }
+
+        #expect(try await waitForRequestCount(1, transport: transport))
+        let refreshRequest = Task {
+            try await repository.refreshCountries()
+        }
+        #expect(try await waitForRequestCount(2, transport: transport))
+
+        let refreshedCountries = try await refreshRequest.value
+        let initialCountries = try await initialRequest.value
+        let cachedCountries = try await repository.countries(matching: "")
+
+        #expect(refreshedCountries.first?.name == "Nippon")
+        #expect(initialCountries.first?.name == "Japan")
+        #expect(cachedCountries.first?.name == "Nippon")
+        #expect(transport.numberOfRequests == 2)
+    }
+
+    @Test
+    func coalescesConcurrentRefreshRequests() async throws {
+        let transport = try MockNetworkTransport(
+            responses: [countryListResponse(japanName: "Nippon")],
+            responseDelays: [0.1]
+        )
+        let repository = ApolloCountryRepository(networkTransport: transport)
+
+        let results = try await withThrowingTaskGroup(of: [Country].self) { group in
+            for _ in 0 ..< 3 {
+                group.addTask {
+                    try await repository.refreshCountries()
+                }
+            }
+
+            var results: [[Country]] = []
+            for try await result in group {
+                results.append(result)
+            }
+            return results
+        }
+
+        #expect(results.count == 3)
+        #expect(results.allSatisfy { $0.first?.name == "Nippon" })
+        #expect(transport.numberOfRequests == 1)
     }
 
     @Test

@@ -3,10 +3,17 @@ import CountriesAPI
 import Foundation
 
 public actor ApolloCountryRepository: CountryRepository {
+    private struct CountriesFetch {
+        let id: UUID
+        let isRefresh: Bool
+        let task: Task<[Country], Error>
+    }
+
     private let client: ApolloClient
     private let cacheLifetime: TimeInterval
     private var cachedCountries: [Country]?
     private var cachedCountriesAt: Date?
+    private var inFlightCountriesFetch: CountriesFetch?
 
     public init(
         endpoint: URL = URL(string: "https://countries.trevorblades.com/")!,
@@ -30,14 +37,14 @@ public actor ApolloCountryRepository: CountryRepository {
         let countries: [Country] = if let cachedCountries, isCacheFresh {
             cachedCountries
         } else {
-            try await fetchAndCacheCountries()
+            try await coalescedCountries()
         }
 
         return countries.filter { $0.matches(search: search) }
     }
 
     public func refreshCountries() async throws -> [Country] {
-        try await fetchAndCacheCountries()
+        try await coalescedCountries(isRefresh: true)
     }
 
     private var isCacheFresh: Bool {
@@ -47,15 +54,47 @@ public actor ApolloCountryRepository: CountryRepository {
         return Date() < cachedCountriesAt.addingTimeInterval(cacheLifetime)
     }
 
-    private func fetchAndCacheCountries() async throws -> [Country] {
-        let countries = try await fetchCountries(query: CountriesQuery()) { data in
-            data.countries.map {
-                CountryMapper.map(Self.response(from: $0.fragments.countryFields))
+    private func coalescedCountries(isRefresh: Bool = false) async throws -> [Country] {
+        let fetch: CountriesFetch = if let inFlightCountriesFetch {
+            if !isRefresh || inFlightCountriesFetch.isRefresh {
+                inFlightCountriesFetch
+            } else {
+                startCountriesFetch(isRefresh: true)
             }
+        } else {
+            startCountriesFetch(isRefresh: isRefresh)
         }
-        cachedCountries = countries
-        cachedCountriesAt = Date()
-        return countries
+
+        do {
+            let countries = try await fetch.task.value
+            if inFlightCountriesFetch?.id == fetch.id {
+                cachedCountries = countries
+                cachedCountriesAt = Date()
+                inFlightCountriesFetch = nil
+            }
+            return countries
+        } catch {
+            if inFlightCountriesFetch?.id == fetch.id {
+                inFlightCountriesFetch = nil
+            }
+            throw error
+        }
+    }
+
+    private func startCountriesFetch(isRefresh: Bool) -> CountriesFetch {
+        let fetch = CountriesFetch(
+            id: UUID(),
+            isRefresh: isRefresh,
+            task: Task {
+                try await self.fetchCountries(query: CountriesQuery()) { data in
+                    data.countries.map {
+                        CountryMapper.map(Self.response(from: $0.fragments.countryFields))
+                    }
+                }
+            }
+        )
+        inFlightCountriesFetch = fetch
+        return fetch
     }
 
     private func fetchCountries<Query: GraphQLQuery>(
