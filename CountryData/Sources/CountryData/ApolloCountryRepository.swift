@@ -11,6 +11,7 @@ public actor ApolloCountryRepository: CountryRepository {
 
     private let client: ApolloClient
     private let cacheLifetime: TimeInterval
+    private let countryCache: CountrySnapshotCache
     private var cachedCountries: [Country]?
     private var cachedCountriesAt: Date?
     private var inFlightCountriesFetch: CountriesFetch?
@@ -21,6 +22,7 @@ public actor ApolloCountryRepository: CountryRepository {
     ) {
         client = ApolloClient(url: endpoint)
         self.cacheLifetime = max(0, cacheLifetime)
+        countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
     }
 
     public init(
@@ -30,21 +32,70 @@ public actor ApolloCountryRepository: CountryRepository {
         let store = ApolloStore(cache: InMemoryNormalizedCache())
         client = ApolloClient(networkTransport: networkTransport, store: store)
         self.cacheLifetime = max(0, cacheLifetime)
+        countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore(inMemory: true))
     }
 
-    public func countries(matching search: String) async throws -> [Country] {
+    init(
+        networkTransport: any NetworkTransport,
+        cacheStore: any CountryCacheStore,
+        cacheLifetime: TimeInterval = 15 * 60
+    ) {
+        let store = ApolloStore(cache: InMemoryNormalizedCache())
+        client = ApolloClient(networkTransport: networkTransport, store: store)
+        self.cacheLifetime = max(0, cacheLifetime)
+        countryCache = CountrySnapshotCache(store: cacheStore)
+    }
+
+    public func countries(matching search: String) async throws -> CountryListResult {
+        await loadPersistedCacheIfNeeded()
         let search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        let countries: [Country] = if let cachedCountries, isCacheFresh {
-            cachedCountries
-        } else {
-            try await coalescedCountries()
+        do {
+            let result: CountryListResult = if let cachedCountries, isCacheFresh {
+                CountryListResult(countries: cachedCountries, freshness: .fresh)
+            } else {
+                try await coalescedCountries()
+            }
+            return filtered(result, matching: search)
+        } catch {
+            guard let cachedCountries else {
+                throw error
+            }
+            await countryCache.logFallback(error, isRefresh: false)
+            return filtered(
+                CountryListResult(countries: cachedCountries, freshness: .stale),
+                matching: search
+            )
         }
-
-        return countries.filter { $0.matches(search: search) }
     }
 
-    public func refreshCountries() async throws -> [Country] {
-        try await coalescedCountries(isRefresh: true)
+    public func refreshCountries() async throws -> CountryListResult {
+        await loadPersistedCacheIfNeeded()
+        do {
+            return try await coalescedCountries(isRefresh: true)
+        } catch {
+            guard let cachedCountries else {
+                throw error
+            }
+            await countryCache.logFallback(error, isRefresh: true)
+            return CountryListResult(countries: cachedCountries, freshness: .stale)
+        }
+    }
+
+    private func filtered(
+        _ result: CountryListResult,
+        matching search: String
+    ) -> CountryListResult {
+        CountryListResult(
+            countries: result.countries.filter { $0.matches(search: search) },
+            freshness: result.freshness
+        )
+    }
+
+    private func loadPersistedCacheIfNeeded() async {
+        if let snapshot = await countryCache.load(), cachedCountries == nil {
+            cachedCountries = snapshot.countries
+            cachedCountriesAt = snapshot.savedAt
+        }
     }
 
     private var isCacheFresh: Bool {
@@ -54,7 +105,7 @@ public actor ApolloCountryRepository: CountryRepository {
         return Date() < cachedCountriesAt.addingTimeInterval(cacheLifetime)
     }
 
-    private func coalescedCountries(isRefresh: Bool = false) async throws -> [Country] {
+    private func coalescedCountries(isRefresh: Bool = false) async throws -> CountryListResult {
         let fetch: CountriesFetch = if let inFlightCountriesFetch {
             if !isRefresh || inFlightCountriesFetch.isRefresh {
                 inFlightCountriesFetch
@@ -69,10 +120,14 @@ public actor ApolloCountryRepository: CountryRepository {
             let countries = try await fetch.task.value
             if inFlightCountriesFetch?.id == fetch.id {
                 cachedCountries = countries
-                cachedCountriesAt = Date()
+                let savedAt = Date()
+                cachedCountriesAt = savedAt
                 inFlightCountriesFetch = nil
+                await countryCache.save(
+                    PersistedCountrySnapshot(countries: countries, savedAt: savedAt)
+                )
             }
-            return countries
+            return CountryListResult(countries: countries, freshness: .fresh)
         } catch {
             if inFlightCountriesFetch?.id == fetch.id {
                 inFlightCountriesFetch = nil

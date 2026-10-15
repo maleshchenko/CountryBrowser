@@ -70,6 +70,16 @@ struct CountryListView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if viewModel.isShowingStaleData {
+                Text("countries.stale.notice", bundle: .module)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(.bar)
+            }
+        }
         .navigationTitle(Text("countries.title", bundle: .module))
         .searchable(
             text: Binding(

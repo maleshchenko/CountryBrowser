@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Country: Identifiable, Hashable, Sendable {
+public struct Country: Codable, Identifiable, Hashable, Sendable {
     public let code: String
     public let name: String
     public let flag: String
@@ -40,7 +40,7 @@ public struct Country: Identifiable, Hashable, Sendable {
     }
 }
 
-public struct CountryLanguage: Hashable, Sendable {
+public struct CountryLanguage: Codable, Hashable, Sendable {
     public let code: String
     public let name: String
 

@@ -7,6 +7,7 @@
 "countries.error.request" = "Could not complete the country request. Try again.";
 "countries.loading" = "Loading countries…";
 "countries.search.prompt" = "Search countries";
+"countries.stale.notice" = "Showing saved countries. The list may be out of date.";
 "countries.title" = "Countries";
 "countries.unavailable.title" = "Countries unavailable";
 "country.capital" = "Capital";

@@ -1,8 +1,8 @@
 import Foundation
 
 public protocol CountryRepository: Sendable {
-    func countries(matching search: String) async throws -> [Country]
-    func refreshCountries() async throws -> [Country]
+    func countries(matching search: String) async throws -> CountryListResult
+    func refreshCountries() async throws -> CountryListResult
     func country(withCode code: String) async throws -> Country?
 }
 

@@ -9,6 +9,7 @@ private actor MockCountryRepository: CountryRepository {
     private let shouldFail: Bool
     private let repositoryError: CountryRepositoryError?
     private let searchDelay: Duration
+    private let freshness: CountryListResult.Freshness
     private var searchRequests: [String] = []
     private var refreshRequestCount = 0
     private var detailRequests: [String] = []
@@ -18,16 +19,18 @@ private actor MockCountryRepository: CountryRepository {
         detailCountry: Country? = nil,
         shouldFail: Bool = false,
         repositoryError: CountryRepositoryError? = nil,
-        searchDelay: Duration = .zero
+        searchDelay: Duration = .zero,
+        freshness: CountryListResult.Freshness = .fresh
     ) {
         self.countries = countries
         self.detailCountry = detailCountry
         self.shouldFail = shouldFail
         self.repositoryError = repositoryError
         self.searchDelay = searchDelay
+        self.freshness = freshness
     }
 
-    func countries(matching search: String) async throws -> [Country] {
+    func countries(matching search: String) async throws -> CountryListResult {
         searchRequests.append(search)
         if searchDelay > .zero {
             try await Task.sleep(for: searchDelay)
@@ -38,10 +41,13 @@ private actor MockCountryRepository: CountryRepository {
         if shouldFail {
             throw URLError(.notConnectedToInternet)
         }
-        return countries.filter { $0.matches(search: search) }
+        return CountryListResult(
+            countries: countries.filter { $0.matches(search: search) },
+            freshness: freshness
+        )
     }
 
-    func refreshCountries() async throws -> [Country] {
+    func refreshCountries() async throws -> CountryListResult {
         refreshRequestCount += 1
         if let repositoryError {
             throw repositoryError
@@ -49,7 +55,7 @@ private actor MockCountryRepository: CountryRepository {
         if shouldFail {
             throw URLError(.notConnectedToInternet)
         }
-        return countries
+        return CountryListResult(countries: countries, freshness: freshness)
     }
 
     func country(withCode code: String) async throws -> Country? {
@@ -109,6 +115,19 @@ struct CountryListViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.state == .loaded([japan]))
+        #expect(!viewModel.isShowingStaleData)
+    }
+
+    @Test
+    func exposesStaleListData() async {
+        let viewModel = CountryListViewModel(
+            repository: MockCountryRepository(countries: [japan], freshness: .stale)
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.state == .loaded([japan]))
+        #expect(viewModel.isShowingStaleData)
     }
 
     @Test

@@ -21,7 +21,7 @@ private final class DelayedResponse: @unchecked Sendable {
     }
 }
 
-private final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
+final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var responses: [JSONObject]
     private let responseDelays: [TimeInterval]
@@ -173,9 +173,10 @@ struct ApolloCountryRepositoryTests {
 
         let countries = try await repository.countries(matching: "")
 
-        #expect(countries.map(\.code) == ["JP", "CA"])
-        #expect(countries[0].capital == "Tokyo")
-        #expect(countries[0].languages == [CountryLanguage(code: "ja", name: "Japanese")])
+        #expect(countries.countries.map(\.code) == ["JP", "CA"])
+        #expect(countries.countries[0].capital == "Tokyo")
+        #expect(countries.countries[0].languages == [CountryLanguage(code: "ja", name: "Japanese")])
+        #expect(countries.freshness == .fresh)
         #expect(transport.numberOfRequests == 1)
     }
 
@@ -258,11 +259,11 @@ struct ApolloCountryRepositoryTests {
         let refreshed = try await repository.refreshCountries()
         let nippon = try await repository.countries(matching: "nip")
 
-        #expect(japan.map(\.code) == ["JP"])
-        #expect(canada.map(\.code) == ["CA"])
-        #expect(allCountries.map(\.code) == ["JP", "CA"])
-        #expect(refreshed.first?.name == "Nippon")
-        #expect(nippon.map(\.code) == ["JP"])
+        #expect(japan.countries.map(\.code) == ["JP"])
+        #expect(canada.countries.map(\.code) == ["CA"])
+        #expect(allCountries.countries.map(\.code) == ["JP", "CA"])
+        #expect(refreshed.countries.first?.name == "Nippon")
+        #expect(nippon.countries.map(\.code) == ["JP"])
         #expect(transport.numberOfRequests == 2)
     }
 
@@ -276,8 +277,8 @@ struct ApolloCountryRepositoryTests {
         let firstFetch = try await repository.countries(matching: "")
         let secondFetch = try await repository.countries(matching: "")
 
-        #expect(firstFetch.first?.name == "Japan")
-        #expect(secondFetch.first?.name == "Nippon")
+        #expect(firstFetch.countries.first?.name == "Japan")
+        #expect(secondFetch.countries.first?.name == "Nippon")
         #expect(transport.numberOfRequests == 2)
     }
 
@@ -289,14 +290,14 @@ struct ApolloCountryRepositoryTests {
         )
         let repository = ApolloCountryRepository(networkTransport: transport)
 
-        let results = try await withThrowingTaskGroup(of: [Country].self) { group in
+        let results = try await withThrowingTaskGroup(of: CountryListResult.self) { group in
             for _ in 0 ..< 5 {
                 group.addTask {
                     try await repository.countries(matching: "")
                 }
             }
 
-            var results: [[Country]] = []
+            var results: [CountryListResult] = []
             for try await result in group {
                 results.append(result)
             }
@@ -304,7 +305,7 @@ struct ApolloCountryRepositoryTests {
         }
 
         #expect(results.count == 5)
-        #expect(results.allSatisfy { $0.map(\.code) == ["JP", "CA"] })
+        #expect(results.allSatisfy { $0.countries.map(\.code) == ["JP", "CA"] })
         #expect(transport.numberOfRequests == 1)
     }
 
@@ -332,9 +333,9 @@ struct ApolloCountryRepositoryTests {
         let initialCountries = try await initialRequest.value
         let cachedCountries = try await repository.countries(matching: "")
 
-        #expect(refreshedCountries.first?.name == "Nippon")
-        #expect(initialCountries.first?.name == "Japan")
-        #expect(cachedCountries.first?.name == "Nippon")
+        #expect(refreshedCountries.countries.first?.name == "Nippon")
+        #expect(initialCountries.countries.first?.name == "Japan")
+        #expect(cachedCountries.countries.first?.name == "Nippon")
         #expect(transport.numberOfRequests == 2)
     }
 
@@ -346,14 +347,14 @@ struct ApolloCountryRepositoryTests {
         )
         let repository = ApolloCountryRepository(networkTransport: transport)
 
-        let results = try await withThrowingTaskGroup(of: [Country].self) { group in
+        let results = try await withThrowingTaskGroup(of: CountryListResult.self) { group in
             for _ in 0 ..< 3 {
                 group.addTask {
                     try await repository.refreshCountries()
                 }
             }
 
-            var results: [[Country]] = []
+            var results: [CountryListResult] = []
             for try await result in group {
                 results.append(result)
             }
@@ -361,7 +362,7 @@ struct ApolloCountryRepositoryTests {
         }
 
         #expect(results.count == 3)
-        #expect(results.allSatisfy { $0.first?.name == "Nippon" })
+        #expect(results.allSatisfy { $0.countries.first?.name == "Nippon" })
         #expect(transport.numberOfRequests == 1)
     }
 
@@ -384,7 +385,7 @@ struct ApolloCountryRepositoryTests {
 
         let countries = try await repository.countries(matching: "")
 
-        #expect(countries.map(\.code) == ["JP", "CA"])
+        #expect(countries.countries.map(\.code) == ["JP", "CA"])
         #expect(transport.numberOfRequests == 2)
     }
 }

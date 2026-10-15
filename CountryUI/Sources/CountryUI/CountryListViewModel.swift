@@ -16,6 +16,7 @@ public final class CountryListViewModel {
 
     public private(set) var state: State = .idle
     public private(set) var searchText = ""
+    public private(set) var isShowingStaleData = false
 
     @ObservationIgnored private let repository: any CountryRepository
     @ObservationIgnored private let searchInput = PassthroughSubject<String, Never>()
@@ -53,11 +54,12 @@ public final class CountryListViewModel {
             state = .loading
         }
         do {
-            let countries = try await repository.countries(matching: search)
+            let result = try await repository.countries(matching: search)
             guard activeRequest == request else {
                 return
             }
-            state = countries.isEmpty ? .empty : .loaded(countries)
+            isShowingStaleData = result.freshness == .stale
+            state = result.countries.isEmpty ? .empty : .loaded(result.countries)
         } catch is CancellationError {
             return
         } catch {
@@ -72,12 +74,13 @@ public final class CountryListViewModel {
         let request = UUID()
         activeRequest = request
         do {
-            let countries = try await repository.refreshCountries()
+            let result = try await repository.refreshCountries()
             guard activeRequest == request else {
                 return
             }
             let search = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let filteredCountries = countries.filter { $0.matches(search: search) }
+            let filteredCountries = result.countries.filter { $0.matches(search: search) }
+            isShowingStaleData = result.freshness == .stale
             state = filteredCountries.isEmpty ? .empty : .loaded(filteredCountries)
         } catch is CancellationError {
             return
