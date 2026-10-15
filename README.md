@@ -22,7 +22,7 @@ iPad is also supported
 ## Build and run
 
 - Requires Xcode 27.0 or later.
-- Deployment targets: iOS 17.6 and macOS 26.6.
+- Deployment targets: iOS 17 and macOS 14.
 - Developed and tested in Simulator on iPhone 18 Pro Max and iPad Pro.
 
 Open `Country Browser.xcodeproj` in Xcode, select the `CountryBrowser` scheme
