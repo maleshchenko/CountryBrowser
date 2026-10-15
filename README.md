@@ -19,6 +19,22 @@ iPad is also supported
 
 <img width="2064" height="2752" alt="Screenshot iPad Pro 13-inch (M5) (16GB) 15 10 2026 at 10 32 17 AM" src="https://github.com/user-attachments/assets/15e31f3d-3af7-4af3-8085-7d5bc7ac3dc0" />
 
+## Build and run
+
+- Requires Xcode 27.0 or later.
+- The app's iOS deployment target is iOS 17.6.
+- Developed and tested in Simulator on iPhone 18 Pro Max and iPad Pro.
+
+Open `Country Browser.xcodeproj` in Xcode, select the `CountryBrowser` scheme and
+an iOS Simulator destination, then press **Run**. To build from Terminal:
+
+```sh
+xcodebuild -project "Country Browser.xcodeproj" \
+  -scheme CountryBrowser \
+  -destination "platform=iOS Simulator,name=iPhone 18 Pro Max" \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
 
 ## Swift quality tools
 
