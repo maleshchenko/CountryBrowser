@@ -2,7 +2,42 @@
 import Foundation
 import Testing
 
+private actor FlakyCountryCacheStore: CountryCacheStore {
+    private var loadCount = 0
+    private let snapshot: PersistedCountrySnapshot
+
+    init(snapshot: PersistedCountrySnapshot) {
+        self.snapshot = snapshot
+    }
+
+    func load() async throws -> PersistedCountrySnapshot? {
+        loadCount += 1
+        guard loadCount > 1 else {
+            throw CacheStoreTestError.temporaryFailure
+        }
+        return snapshot
+    }
+
+    func save(_: PersistedCountrySnapshot) async throws {}
+}
+
+private enum CacheStoreTestError: Error {
+    case temporaryFailure
+}
+
 struct CountryCacheStoreTests {
+    @Test
+    func retriesSnapshotLoadAfterStorageFailure() async {
+        let snapshot = PersistedCountrySnapshot(countries: [CountryFixtures.japan], savedAt: Date())
+        let cache = CountrySnapshotCache(store: FlakyCountryCacheStore(snapshot: snapshot))
+
+        let firstLoad = await cache.load()
+        let secondLoad = await cache.load()
+
+        #expect(firstLoad == nil)
+        #expect(secondLoad?.countries == snapshot.countries)
+    }
+
     @Test
     func persistsCountrySnapshotUsingSwiftData() async throws {
         let country = CountryFixtures.japan

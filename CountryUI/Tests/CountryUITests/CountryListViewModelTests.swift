@@ -6,7 +6,7 @@ import Testing
 private actor MockCountryRepository: CountryRepository {
     private let countries: [Country]
     private let detailCountry: Country?
-    private let shouldFail: Bool
+    private var shouldFail: Bool
     private let repositoryError: CountryRepositoryError?
     private let searchDelay: Duration
     private let freshness: CountryListResult.Freshness
@@ -80,6 +80,10 @@ private actor MockCountryRepository: CountryRepository {
     func numberOfRefreshRequests() -> Int {
         refreshRequestCount
     }
+
+    func setShouldFail(_ shouldFail: Bool) {
+        self.shouldFail = shouldFail
+    }
 }
 
 @MainActor
@@ -128,6 +132,18 @@ struct CountryListViewModelTests {
 
         #expect(viewModel.state == .loaded([japan]))
         #expect(viewModel.isShowingStaleData)
+    }
+
+    @Test
+    func clearsStaleIndicatorAfterLoadFailure() async {
+        let repository = MockCountryRepository(countries: [japan], freshness: .stale)
+        let viewModel = CountryListViewModel(repository: repository)
+        await viewModel.load()
+
+        await repository.setShouldFail(true)
+        await viewModel.load(matching: "unavailable")
+
+        #expect(!viewModel.isShowingStaleData)
     }
 
     @Test

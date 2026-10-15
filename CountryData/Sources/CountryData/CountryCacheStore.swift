@@ -103,6 +103,11 @@ actor SwiftDataCountryCacheStore: CountryCacheStore {
 }
 
 actor CountrySnapshotCache {
+    private struct CacheLoad {
+        let id: UUID
+        let task: Task<PersistedCountrySnapshot?, Error>
+    }
+
     private let store: any CountryCacheStore
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "CountryBrowser",
@@ -110,7 +115,7 @@ actor CountrySnapshotCache {
     )
     private var hasLoaded = false
     private var cachedSnapshot: PersistedCountrySnapshot?
-    private var loadTask: Task<PersistedCountrySnapshot?, Error>?
+    private var load: CacheLoad?
 
     init(store: any CountryCacheStore) {
         self.store = store
@@ -120,24 +125,29 @@ actor CountrySnapshotCache {
         guard !hasLoaded else {
             return cachedSnapshot
         }
-        let task: Task<PersistedCountrySnapshot?, Error>
-        if let loadTask {
-            task = loadTask
+        let cacheLoad: CacheLoad
+        if let load {
+            cacheLoad = load
         } else {
-            task = Task {
-                try await store.load()
-            }
-            loadTask = task
+            cacheLoad = CacheLoad(
+                id: UUID(),
+                task: Task {
+                    try await store.load()
+                }
+            )
+            load = cacheLoad
         }
         do {
-            cachedSnapshot = try await task.value
+            cachedSnapshot = try await cacheLoad.task.value
+            hasLoaded = true
         } catch {
             logger.error(
                 "Could not load saved country data: \(String(reflecting: error), privacy: .private)"
             )
         }
-        hasLoaded = true
-        loadTask = nil
+        if load?.id == cacheLoad.id {
+            load = nil
+        }
         return cachedSnapshot
     }
 

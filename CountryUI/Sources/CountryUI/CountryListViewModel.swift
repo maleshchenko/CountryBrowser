@@ -66,6 +66,7 @@ public final class CountryListViewModel {
             guard activeRequest == request else {
                 return
             }
+            isShowingStaleData = false
             state = .failed(CountryErrorPresentation.message(for: error, context: .countries))
         }
     }
@@ -88,6 +89,7 @@ public final class CountryListViewModel {
             guard activeRequest == request else {
                 return
             }
+            isShowingStaleData = false
             state = .failed(CountryErrorPresentation.message(for: error, context: .countries))
         }
     }
