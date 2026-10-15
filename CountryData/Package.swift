@@ -25,7 +25,11 @@ let package = Package(
         ),
         .testTarget(
             name: "CountryDataTests",
-            dependencies: ["CountryData"],
+            dependencies: [
+                "CountryData",
+                .product(name: "Apollo", package: "apollo-ios"),
+                .product(name: "ApolloAPI", package: "apollo-ios")
+            ],
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         )
     ]

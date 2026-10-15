@@ -10,6 +10,11 @@ public actor ApolloCountryRepository: CountryRepository {
         client = ApolloClient(url: endpoint)
     }
 
+    public init(networkTransport: any NetworkTransport) {
+        let store = ApolloStore(cache: InMemoryNormalizedCache())
+        client = ApolloClient(networkTransport: networkTransport, store: store)
+    }
+
     public func countries(matching search: String) async throws -> [Country] {
         let search = search.trimmingCharacters(in: .whitespacesAndNewlines)
         let countries: [Country]
