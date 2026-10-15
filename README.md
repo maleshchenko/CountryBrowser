@@ -12,7 +12,7 @@ Lint app and package source (including tests):
 
 ```sh
 swiftlint lint --strict --config .swiftlint.yml \
-  MyApp CountryData/Sources/CountryData CountryData/Tests \
+  CountryBrowser CountryData/Sources/CountryData CountryData/Tests \
   CountryUI/Sources CountryUI/Tests
 ```
 
@@ -20,10 +20,10 @@ Check formatting or apply the repository's formatting rules:
 
 ```sh
 swiftformat --lint --config .swiftformat \
-  MyApp CountryData/Sources/CountryData CountryData/Tests \
+  CountryBrowser CountryData/Sources/CountryData CountryData/Tests \
   CountryUI/Sources CountryUI/Tests
 swiftformat --config .swiftformat \
-  MyApp CountryData/Sources/CountryData CountryData/Tests \
+  CountryBrowser CountryData/Sources/CountryData CountryData/Tests \
   CountryUI/Sources CountryUI/Tests
 ```
 

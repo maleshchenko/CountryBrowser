@@ -8,7 +8,7 @@ country details from the public Countries GraphQL API
 
 ## Architecture
 
-- `MyApp/` contains the app entry point and composition only.
+- `CountryBrowser/` contains the app entry point and composition only.
 - `CountryData/` owns Apollo, GraphQL operations and generated schema types,
   domain models, mapping, and the `CountryRepository` abstraction.
 - `CountryUI/` owns SwiftUI screens and `@Observable` view models. It depends
@@ -51,17 +51,17 @@ Run strict lint and formatting checks:
 
 ```sh
 swiftlint lint --strict --config .swiftlint.yml \
-  MyApp CountryData/Sources/CountryData CountryData/Tests \
+  CountryBrowser CountryData/Sources/CountryData CountryData/Tests \
   CountryUI/Sources CountryUI/Tests
 swiftformat --lint --config .swiftformat \
-  MyApp CountryData/Sources/CountryData CountryData/Tests \
+  CountryBrowser CountryData/Sources/CountryData CountryData/Tests \
   CountryUI/Sources CountryUI/Tests
 ```
 
 Build the iOS Simulator app:
 
 ```sh
-xcodebuild -project "Untitled Project.xcodeproj" -scheme MyApp \
+xcodebuild -project "Country Browser.xcodeproj" -scheme CountryBrowser \
   -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO build
 ```
 
