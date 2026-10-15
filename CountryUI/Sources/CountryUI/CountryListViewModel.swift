@@ -5,8 +5,8 @@ import Observation
 
 @MainActor
 @Observable
-public final class CountryListViewModel {
-    public enum State: Equatable {
+final class CountryListViewModel {
+    enum State: Equatable {
         case idle
         case loading
         case loaded([Country])
@@ -14,16 +14,16 @@ public final class CountryListViewModel {
         case failed(String)
     }
 
-    public private(set) var state: State = .idle
-    public private(set) var searchText = ""
-    public private(set) var isShowingStaleData = false
+    private(set) var state: State = .idle
+    private(set) var searchText = ""
+    private(set) var isShowingStaleData = false
 
     @ObservationIgnored private let repository: any CountryRepository
     @ObservationIgnored private let searchInput = PassthroughSubject<String, Never>()
     @ObservationIgnored private var searchSubscription: AnyCancellable?
     @ObservationIgnored private var activeRequest = UUID()
 
-    public init(repository: any CountryRepository) {
+    init(repository: any CountryRepository) {
         self.repository = repository
         searchSubscription = searchInput
             .removeDuplicates()
@@ -35,16 +35,16 @@ public final class CountryListViewModel {
             }
     }
 
-    public func updateSearch(_ text: String) {
+    func updateSearch(_ text: String) {
         searchText = text
         searchInput.send(text)
     }
 
-    public func load() async {
+    func load() async {
         await load(matching: searchText)
     }
 
-    public func load(matching search: String) async {
+    func load(matching search: String) async {
         let request = UUID()
         activeRequest = request
         switch state {
@@ -71,7 +71,7 @@ public final class CountryListViewModel {
         }
     }
 
-    public func refresh() async {
+    func refresh() async {
         let request = UUID()
         activeRequest = request
         do {

@@ -32,7 +32,7 @@ public enum CountryRepositoryError: Error, LocalizedError, Sendable {
         }
     }
 
-    public var diagnosticDescription: String {
+    var diagnosticDescription: String {
         switch self {
         case let .networkFailure(details), let .requestFailure(details):
             "\(category.rawValue): \(details)"

@@ -19,10 +19,13 @@ public actor ApolloCountryRepository: CountryRepository {
     private var cachedCountriesAt: Date?
     private var inFlightCountriesFetch: CountriesFetch?
 
-    public init(
-        endpoint: URL = CountryAPIConfiguration.endpoint,
-        cacheLifetime: TimeInterval = 15 * 60
-    ) {
+    public init(cacheLifetime: TimeInterval = 15 * 60) {
+        client = ApolloClient(url: CountryAPIConfiguration.endpoint)
+        self.cacheLifetime = max(0, cacheLifetime)
+        countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
+    }
+
+    public init(endpoint: URL, cacheLifetime: TimeInterval = 15 * 60) {
         client = ApolloClient(url: endpoint)
         self.cacheLifetime = max(0, cacheLifetime)
         countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
