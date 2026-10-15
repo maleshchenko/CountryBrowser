@@ -2,6 +2,9 @@ import Apollo
 import CountriesAPI
 import Foundation
 
+/// The generated list query has no mutable state, Apollo iOS 1.x omits Sendable annotations.
+extension CountriesQuery: @retroactive @unchecked Sendable {}
+
 public actor ApolloCountryRepository: CountryRepository {
     private struct CountriesFetch {
         let id: UUID
@@ -152,7 +155,7 @@ public actor ApolloCountryRepository: CountryRepository {
         return fetch
     }
 
-    private func fetchCountries<Query: GraphQLQuery>(
+    private func fetchCountries<Query: GraphQLQuery & Sendable>(
         query: Query,
         map: @escaping (Query.Data) -> [Country]
     ) async throws -> [Country] {
