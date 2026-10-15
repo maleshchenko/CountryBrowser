@@ -7,6 +7,7 @@ private actor MockCountryRepository: CountryRepository {
     private let countries: [Country]
     private let detailCountry: Country?
     private let shouldFail: Bool
+    private let searchDelay: Duration
     private var searchRequests: [String] = []
     private var refreshRequestCount = 0
     private var detailRequests: [String] = []
@@ -14,15 +15,20 @@ private actor MockCountryRepository: CountryRepository {
     init(
         countries: [Country] = [],
         detailCountry: Country? = nil,
-        shouldFail: Bool = false
+        shouldFail: Bool = false,
+        searchDelay: Duration = .zero
     ) {
         self.countries = countries
         self.detailCountry = detailCountry
         self.shouldFail = shouldFail
+        self.searchDelay = searchDelay
     }
 
     func countries(matching search: String) async throws -> [Country] {
         searchRequests.append(search)
+        if searchDelay > .zero {
+            try await Task.sleep(for: searchDelay)
+        }
         if shouldFail {
             throw URLError(.notConnectedToInternet)
         }
@@ -147,6 +153,33 @@ struct CountryListViewModelTests {
 
         #expect(await repository.recordedSearchRequests() == ["jap"])
         #expect(viewModel.state == .loaded([japan]))
+    }
+
+    @Test
+    func keepsCurrentCountriesVisibleWhileSearchLoads() async throws {
+        let repository = MockCountryRepository(
+            countries: [japan, canada],
+            searchDelay: .milliseconds(200)
+        )
+        let viewModel = CountryListViewModel(repository: repository)
+        await viewModel.load()
+
+        let searchTask = Task {
+            await viewModel.load(matching: "can")
+        }
+        for _ in 0 ..< 50 {
+            if await repository.recordedSearchRequests().count == 2 {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(await repository.recordedSearchRequests() == ["", "can"])
+        #expect(viewModel.state == .loaded([japan, canada]))
+
+        await searchTask.value
+
+        #expect(viewModel.state == .loaded([canada]))
     }
 
     @Test

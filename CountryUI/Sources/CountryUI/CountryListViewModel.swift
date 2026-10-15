@@ -46,7 +46,12 @@ public final class CountryListViewModel {
     public func load(matching search: String) async {
         let request = UUID()
         activeRequest = request
-        state = .loading
+        switch state {
+        case .loaded:
+            break
+        default:
+            state = .loading
+        }
         do {
             let countries = try await repository.countries(matching: search)
             guard activeRequest == request else {
