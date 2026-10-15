@@ -52,3 +52,16 @@ configuration files are the source of truth for formatting and lint rules.
 
 GitHub Actions runs both package test suites, strict SwiftLint, and SwiftFormat
 lint on every push and pull request.
+
+## Architecture decisions
+
+- The app target only composes the `CountryData` and `CountryUI` packages.
+  The data package owns Apollo operations and maps generated responses into domain models.
+  the UI depends on the repository protocol, not Apollo types.
+- Search filters the fetched country list locally, avoiding reliance on the
+  public API's search behavior. Search input is debounced before filtering.
+- The repository combines a short-lived in-memory cache with a SwiftData
+  snapshot and serves saved results as stale data when a request fails.
+
+With more time, I would add explicit snapshot format migration
+and evaluate cancellation of superseded searches against Apollo's request coalescing behavior.
