@@ -22,17 +22,26 @@ iPad is also supported
 ## Build and run
 
 - Requires Xcode 27.0 or later.
-- The app's iOS deployment target is iOS 17.6.
+- Deployment targets: iOS 17.6 and macOS 26.6.
 - Developed and tested in Simulator on iPhone 18 Pro Max and iPad Pro.
 
-Open `Country Browser.xcodeproj` in Xcode, select the `CountryBrowser` scheme and
-an iOS Simulator destination, then press **Run**. To build from Terminal:
+Open `Country Browser.xcodeproj` in Xcode, select the `CountryBrowser` scheme
+and an iOS Simulator or My Mac destination, then press **Run**. To build from
+Terminal:
 
 ```sh
+# iOS Simulator
 xcodebuild -project "Country Browser.xcodeproj" \
   -scheme CountryBrowser \
   -destination "platform=iOS Simulator,name=iPhone 18 Pro Max" \
   CODE_SIGNING_ALLOWED=NO build
+
+# macOS
+xcodebuild -project "Country Browser.xcodeproj" \
+  -scheme CountryBrowser \
+  -destination "platform=macOS" \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
 
@@ -66,8 +75,8 @@ swiftformat --config .swiftformat \
 Generated Apollo code is excluded from both tools. The checked-in
 configuration files are the source of truth for formatting and lint rules.
 
-GitHub Actions runs both package test suites, strict SwiftLint, and SwiftFormat
-lint on every push and pull request.
+GitHub Actions runs both package test suites, iOS Simulator and macOS builds,
+strict SwiftLint, and SwiftFormat lint on every push and pull request.
 
 ## Architecture decisions
 
