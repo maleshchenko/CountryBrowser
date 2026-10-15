@@ -1,5 +1,25 @@
 # Country Browser
 
+The app fetches countries list from a GraphQL endpoint
+
+<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 35 08 AM" src="https://github.com/user-attachments/assets/09a6fb8e-7583-42b2-aa08-20f6d20f43a7" />
+
+The app supports Dynamic Type
+
+<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 18 AM" src="https://github.com/user-attachments/assets/99ab11db-9371-4564-a2cb-e2351812f709" />
+
+and dark mode
+
+<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 26 AM" src="https://github.com/user-attachments/assets/757e2b0b-cc9f-4982-ab7e-2c76b7db77ec" />
+
+iPad is also supported
+
+<img width="2064" height="2752" alt="Screenshot iPad Pro 13-inch (M5) (16GB) 15 10 2026 at 10 32 08 AM" src="https://github.com/user-attachments/assets/727672b5-4534-4484-9a4a-8bac5c86187c" />
+
+
+<img width="2064" height="2752" alt="Screenshot iPad Pro 13-inch (M5) (16GB) 15 10 2026 at 10 32 17 AM" src="https://github.com/user-attachments/assets/15e31f3d-3af7-4af3-8085-7d5bc7ac3dc0" />
+
+
 ## Swift quality tools
 
 Install SwiftLint and SwiftFormat with Homebrew:
