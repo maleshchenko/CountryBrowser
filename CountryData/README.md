@@ -17,5 +17,5 @@ Repository errors shown to users are defined in
 
 The country list is cached for 15 minutes by default.
 Call `refreshCountries()` to bypass the cache and replace it,
-`cacheLifetime: 0` disables reuse for clients that need every list request 
+`cacheLifetime: 0` disables reuse for clients that need every list request
 to fetch fresh data.
