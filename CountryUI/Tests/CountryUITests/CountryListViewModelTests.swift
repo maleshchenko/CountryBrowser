@@ -8,6 +8,7 @@ private actor MockCountryRepository: CountryRepository {
     private let detailCountry: Country?
     private let shouldFail: Bool
     private var searchRequests: [String] = []
+    private var refreshRequestCount = 0
     private var detailRequests: [String] = []
 
     init(
@@ -28,6 +29,14 @@ private actor MockCountryRepository: CountryRepository {
         return countries.filter { $0.matches(search: search) }
     }
 
+    func refreshCountries() async throws -> [Country] {
+        refreshRequestCount += 1
+        if shouldFail {
+            throw URLError(.notConnectedToInternet)
+        }
+        return countries
+    }
+
     func country(withCode code: String) async throws -> Country? {
         detailRequests.append(code)
         if shouldFail {
@@ -42,6 +51,10 @@ private actor MockCountryRepository: CountryRepository {
 
     func recordedDetailRequests() -> [String] {
         detailRequests
+    }
+
+    func numberOfRefreshRequests() -> Int {
+        refreshRequestCount
     }
 }
 
@@ -134,6 +147,35 @@ struct CountryListViewModelTests {
 
         #expect(await repository.recordedSearchRequests() == ["jap"])
         #expect(viewModel.state == .loaded([japan]))
+    }
+
+    @Test
+    func refreshesCountriesUsingCurrentSearch() async throws {
+        let repository = MockCountryRepository(countries: [japan, canada])
+        let viewModel = CountryListViewModel(repository: repository)
+        viewModel.updateSearch("can")
+        try await Task.sleep(for: .milliseconds(400))
+
+        await viewModel.refresh()
+
+        #expect(await repository.numberOfRefreshRequests() == 1)
+        #expect(await repository.recordedSearchRequests() == ["can"])
+        #expect(viewModel.state == .loaded([canada]))
+    }
+
+    @Test
+    func reportsRefreshFailure() async {
+        let viewModel = CountryListViewModel(
+            repository: MockCountryRepository(shouldFail: true)
+        )
+
+        await viewModel.refresh()
+
+        if case let .failed(message) = viewModel.state {
+            #expect(!message.isEmpty)
+        } else {
+            Issue.record("Expected the refresh error state.")
+        }
     }
 }
 

@@ -4,34 +4,58 @@ import Foundation
 
 public actor ApolloCountryRepository: CountryRepository {
     private let client: ApolloClient
+    private let cacheLifetime: TimeInterval
     private var cachedCountries: [Country]?
+    private var cachedCountriesAt: Date?
 
-    public init(endpoint: URL = URL(string: "https://countries.trevorblades.com/")!) {
+    public init(
+        endpoint: URL = URL(string: "https://countries.trevorblades.com/")!,
+        cacheLifetime: TimeInterval = 15 * 60
+    ) {
         client = ApolloClient(url: endpoint)
+        self.cacheLifetime = max(0, cacheLifetime)
     }
 
-    public init(networkTransport: any NetworkTransport) {
+    public init(
+        networkTransport: any NetworkTransport,
+        cacheLifetime: TimeInterval = 15 * 60
+    ) {
         let store = ApolloStore(cache: InMemoryNormalizedCache())
         client = ApolloClient(networkTransport: networkTransport, store: store)
+        self.cacheLifetime = max(0, cacheLifetime)
     }
 
     public func countries(matching search: String) async throws -> [Country] {
         let search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        let countries: [Country]
-
-        if let cachedCountries {
-            countries = cachedCountries
+        let countries: [Country] = if let cachedCountries, isCacheFresh {
+            cachedCountries
         } else {
-            let fetchedCountries = try await fetchCountries(query: CountriesQuery()) { data in
-                data.countries.map {
-                    CountryMapper.map(Self.response(from: $0.fragments.countryFields))
-                }
-            }
-            cachedCountries = fetchedCountries
-            countries = fetchedCountries
+            try await fetchAndCacheCountries()
         }
 
         return countries.filter { $0.matches(search: search) }
+    }
+
+    public func refreshCountries() async throws -> [Country] {
+        try await fetchAndCacheCountries()
+    }
+
+    private var isCacheFresh: Bool {
+        guard let cachedCountriesAt else {
+            return false
+        }
+        return Date() < cachedCountriesAt.addingTimeInterval(cacheLifetime)
+    }
+
+    private func fetchAndCacheCountries() async throws -> [Country] {
+        let countries = try await fetchCountries(query: CountriesQuery()) { data in
+            data.countries.map {
+                CountryMapper.map(Self.response(from: $0.fragments.countryFields))
+            }
+        }
+        cachedCountries = countries
+        cachedCountriesAt = Date()
+        return countries
     }
 
     private func fetchCountries<Query: GraphQLQuery>(

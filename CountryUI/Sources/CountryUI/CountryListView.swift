@@ -58,6 +58,9 @@ struct CountryListView: View {
                     }
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    await viewModel.refresh()
+                }
             }
         }
         .navigationTitle(Text("countries.title", bundle: .module))

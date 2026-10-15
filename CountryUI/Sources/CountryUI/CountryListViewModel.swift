@@ -62,4 +62,25 @@ public final class CountryListViewModel {
             state = .failed(String(localized: "countries.error.load", bundle: .module))
         }
     }
+
+    public func refresh() async {
+        let request = UUID()
+        activeRequest = request
+        do {
+            let countries = try await repository.refreshCountries()
+            guard activeRequest == request else {
+                return
+            }
+            let search = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let filteredCountries = countries.filter { $0.matches(search: search) }
+            state = filteredCountries.isEmpty ? .empty : .loaded(filteredCountries)
+        } catch is CancellationError {
+            return
+        } catch {
+            guard activeRequest == request else {
+                return
+            }
+            state = .failed(String(localized: "countries.error.load", bundle: .module))
+        }
+    }
 }

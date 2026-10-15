@@ -60,7 +60,7 @@ private func makeJSONObject(from value: [String: Any]) throws -> JSONObject {
     return object
 }
 
-private func countryListResponse() throws -> JSONObject {
+private func countryListResponse(japanName: String = "Japan") throws -> JSONObject {
     try makeJSONObject(
         from: [
             "data": [
@@ -68,7 +68,7 @@ private func countryListResponse() throws -> JSONObject {
                     [
                         "__typename": "Country",
                         "code": "JP",
-                        "name": "Japan",
+                        "name": japanName,
                         "emoji": "🇯🇵",
                         "capital": "Tokyo",
                         "currencies": ["JPY"],
@@ -170,17 +170,38 @@ struct ApolloCountryRepositoryTests {
 
     @Test
     func cachesSuccessfulCountryListAcrossSearches() async throws {
-        let transport = try MockNetworkTransport(responses: [countryListResponse()])
+        let transport = try MockNetworkTransport(
+            responses: [countryListResponse(), countryListResponse(japanName: "Nippon")]
+        )
         let repository = ApolloCountryRepository(networkTransport: transport)
 
         let japan = try await repository.countries(matching: "jap")
         let canada = try await repository.countries(matching: "can")
         let allCountries = try await repository.countries(matching: "")
+        let refreshed = try await repository.refreshCountries()
+        let nippon = try await repository.countries(matching: "nip")
 
         #expect(japan.map(\.code) == ["JP"])
         #expect(canada.map(\.code) == ["CA"])
         #expect(allCountries.map(\.code) == ["JP", "CA"])
-        #expect(transport.numberOfRequests == 1)
+        #expect(refreshed.first?.name == "Nippon")
+        #expect(nippon.map(\.code) == ["JP"])
+        #expect(transport.numberOfRequests == 2)
+    }
+
+    @Test
+    func refetchesWhenCacheLifetimeIsZero() async throws {
+        let transport = try MockNetworkTransport(
+            responses: [countryListResponse(), countryListResponse(japanName: "Nippon")]
+        )
+        let repository = ApolloCountryRepository(networkTransport: transport, cacheLifetime: 0)
+
+        let firstFetch = try await repository.countries(matching: "")
+        let secondFetch = try await repository.countries(matching: "")
+
+        #expect(firstFetch.first?.name == "Japan")
+        #expect(secondFetch.first?.name == "Nippon")
+        #expect(transport.numberOfRequests == 2)
     }
 
     @Test
