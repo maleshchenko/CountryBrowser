@@ -29,6 +29,13 @@ jobs:
       - name: Test CountryUI package
         run: swift test --package-path CountryUI
 
+      - name: Build iOS Simulator app
+        run: |
+          xcodebuild -project "Country Browser.xcodeproj" \
+            -scheme CountryBrowser \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO build
+
       - name: Lint Swift source
         run: |
           swiftlint lint --strict --config .swiftlint.yml \
