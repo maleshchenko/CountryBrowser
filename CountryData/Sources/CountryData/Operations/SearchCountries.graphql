@@ -1,5 +1,0 @@
-query CountriesSearch($search: String!) {
-  countries(filter: { name: { regex: $search } }) {
-    ...CountryFields
-  }
-}

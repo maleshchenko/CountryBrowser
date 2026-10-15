@@ -4,6 +4,7 @@ import Foundation
 
 public actor ApolloCountryRepository: CountryRepository {
     private let client: ApolloClient
+    private var cachedCountries: [Country]?
 
     public init(endpoint: URL = URL(string: "https://countries.trevorblades.com/")!) {
         client = ApolloClient(url: endpoint)
@@ -11,20 +12,21 @@ public actor ApolloCountryRepository: CountryRepository {
 
     public func countries(matching search: String) async throws -> [Country] {
         let search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        if search.isEmpty {
-            return try await fetchCountries(query: CountriesQuery()) { data in
+        let countries: [Country]
+
+        if let cachedCountries {
+            countries = cachedCountries
+        } else {
+            let fetchedCountries = try await fetchCountries(query: CountriesQuery()) { data in
                 data.countries.map {
                     CountryMapper.map(Self.response(from: $0.fragments.countryFields))
                 }
             }
+            cachedCountries = fetchedCountries
+            countries = fetchedCountries
         }
 
-        let pattern = "(?i).*\\(NSRegularExpression.escapedPattern(for: search)).*"
-        return try await fetchCountries(query: CountriesSearchQuery(search: pattern)) { data in
-            data.countries.map {
-                CountryMapper.map(Self.response(from: $0.fragments.countryFields))
-            }
-        }
+        return countries.filter { $0.matches(search: search) }
     }
 
     private func fetchCountries<Query: GraphQLQuery>(

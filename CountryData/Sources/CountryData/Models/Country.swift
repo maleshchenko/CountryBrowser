@@ -14,6 +14,11 @@ public struct Country: Identifiable, Hashable, Sendable {
         code
     }
 
+    public func matches(search: String) -> Bool {
+        let search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        return search.isEmpty || name.localizedCaseInsensitiveContains(search)
+    }
+
     public init(
         code: String,
         name: String,
