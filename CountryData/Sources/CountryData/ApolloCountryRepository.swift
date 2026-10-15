@@ -20,7 +20,7 @@ public actor ApolloCountryRepository: CountryRepository {
     private var inFlightCountriesFetch: CountriesFetch?
 
     public init(
-        endpoint: URL = URL(string: "https://countries.trevorblades.com/")!,
+        endpoint: URL = CountryAPIConfiguration.endpoint,
         cacheLifetime: TimeInterval = 15 * 60
     ) {
         client = ApolloClient(url: endpoint)
