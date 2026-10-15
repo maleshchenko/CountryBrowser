@@ -2,15 +2,15 @@
 
 The app fetches countries list from a GraphQL endpoint
 
-<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 35 08 AM" src="https://github.com/user-attachments/assets/09a6fb8e-7583-42b2-aa08-20f6d20f43a7" />
+<img alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 35 08 AM" src="https://github.com/user-attachments/assets/09a6fb8e-7583-42b2-aa08-20f6d20f43a7" width="50%" />
 
 The app supports Dynamic Type
 
-<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 18 AM" src="https://github.com/user-attachments/assets/99ab11db-9371-4564-a2cb-e2351812f709" />
+<img alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 18 AM" src="https://github.com/user-attachments/assets/99ab11db-9371-4564-a2cb-e2351812f709" width="50%" />
 
 and dark mode
 
-<img width="1320" height="2868" alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 26 AM" src="https://github.com/user-attachments/assets/757e2b0b-cc9f-4982-ab7e-2c76b7db77ec" />
+<img alt="Screenshot iPhone 18 Pro Max 15 10 2026 at 10 31 26 AM" src="https://github.com/user-attachments/assets/757e2b0b-cc9f-4982-ab7e-2c76b7db77ec" width="50%"/>
 
 iPad is also supported
 
