@@ -5,16 +5,7 @@ import Testing
 struct CountryCacheStoreTests {
     @Test
     func persistsCountrySnapshotUsingSwiftData() async throws {
-        let country = Country(
-            code: "JP",
-            name: "Japan",
-            flag: "🇯🇵",
-            capital: "Tokyo",
-            currencies: ["JPY"],
-            continentCode: "AS",
-            continentName: "Asia",
-            languages: [CountryLanguage(code: "ja", name: "Japanese")]
-        )
+        let country = CountryFixtures.japan
         let savedAt = Date()
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
@@ -36,20 +27,10 @@ struct CountryCacheStoreTests {
 
     @Test
     func servesPersistedCountriesAsStaleWhenRefreshFails() async throws {
-        let japan = Country(
-            code: "JP",
-            name: "Japan",
-            flag: "🇯🇵",
-            capital: "Tokyo",
-            currencies: ["JPY"],
-            continentCode: "AS",
-            continentName: "Asia",
-            languages: []
-        )
         let cacheStore = SwiftDataCountryCacheStore(inMemory: true)
         try await cacheStore.save(
             PersistedCountrySnapshot(
-                countries: [japan],
+                countries: [CountryFixtures.japan],
                 savedAt: Date().addingTimeInterval(-3600)
             )
         )
@@ -64,7 +45,7 @@ struct CountryCacheStoreTests {
 
         let result = try await repository.countries(matching: "")
 
-        #expect(result.countries == [japan])
+        #expect(result.countries == [CountryFixtures.japan])
         #expect(result.freshness == .stale)
     }
 }

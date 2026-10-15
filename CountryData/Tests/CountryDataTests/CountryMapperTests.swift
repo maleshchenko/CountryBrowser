@@ -17,27 +17,12 @@ struct CountryMapperTests {
 
         let country = CountryMapper.map(response)
 
-        #expect(country.id == "JP")
-        #expect(country.name == "Japan")
-        #expect(country.flag == "🇯🇵")
-        #expect(country.capital == "Tokyo")
-        #expect(country.currencies == ["JPY"])
-        #expect(country.continentName == "Asia")
-        #expect(country.languages == [CountryLanguage(code: "ja", name: "Japanese")])
+        #expect(country == CountryFixtures.japan)
     }
 
     @Test
     func matchesCountryNamesCaseInsensitivelyAndBySubstring() {
-        let country = Country(
-            code: "JP",
-            name: "Japan",
-            flag: "🇯🇵",
-            capital: "Tokyo",
-            currencies: ["JPY"],
-            continentCode: "AS",
-            continentName: "Asia",
-            languages: []
-        )
+        let country = CountryFixtures.japan
 
         #expect(country.matches(search: "jap"))
         #expect(country.matches(search: "  JAPAN  "))
