@@ -79,5 +79,7 @@ lint on every push and pull request.
 - The repository combines a short-lived in-memory cache with a SwiftData
   snapshot and serves saved results as stale data when a request fails.
 
-With more time, I would add explicit snapshot format migration
-and evaluate cancellation of superseded searches against Apollo's request coalescing behavior.
+With more time, I would:
+- add explicit snapshot format migration
+- evaluate cancellation of superseded searches against Apollo's request coalescing behavior
+- look into iPhone Duo support
