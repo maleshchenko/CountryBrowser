@@ -121,3 +121,4 @@ With more time, I would:
 - add explicit snapshot format migration
 - evaluate cancellation of superseded searches against Apollo's request coalescing behavior
 - look into iPhone Duo support
+- increase test coverage
