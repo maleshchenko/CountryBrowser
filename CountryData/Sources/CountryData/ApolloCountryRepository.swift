@@ -7,7 +7,7 @@ extension CountriesQuery: @retroactive @unchecked Sendable {}
 
 public actor ApolloCountryRepository: CountryRepository {
     public static let defaultCacheLifetime: TimeInterval = 15 * 60
-    
+
     private struct CountriesFetch {
         let id: UUID
         let isRefresh: Bool
@@ -27,7 +27,10 @@ public actor ApolloCountryRepository: CountryRepository {
         countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
     }
 
-    public init(endpoint: URL, cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime) {
+    public init(
+        endpoint: URL,
+        cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime
+    ) {
         client = ApolloClient(url: endpoint)
         self.cacheLifetime = max(0, cacheLifetime)
         countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
