@@ -197,6 +197,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		F6A004CA3082276900FD946C /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			shellPath = /bin/sh;
 			shellScript = (
 				"if [[ \"$(uname -m)\" == arm64 ]]; then",
