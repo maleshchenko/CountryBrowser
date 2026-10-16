@@ -6,6 +6,8 @@ import Foundation
 extension CountriesQuery: @retroactive @unchecked Sendable {}
 
 public actor ApolloCountryRepository: CountryRepository {
+    public static let defaultCacheLifetime: TimeInterval = 15 * 60
+    
     private struct CountriesFetch {
         let id: UUID
         let isRefresh: Bool
@@ -19,13 +21,13 @@ public actor ApolloCountryRepository: CountryRepository {
     private var cachedCountriesAt: Date?
     private var inFlightCountriesFetch: CountriesFetch?
 
-    public init(cacheLifetime: TimeInterval = 15 * 60) {
+    public init(cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime) {
         client = ApolloClient(url: CountryAPIConfiguration.endpoint)
         self.cacheLifetime = max(0, cacheLifetime)
         countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
     }
 
-    public init(endpoint: URL, cacheLifetime: TimeInterval = 15 * 60) {
+    public init(endpoint: URL, cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime) {
         client = ApolloClient(url: endpoint)
         self.cacheLifetime = max(0, cacheLifetime)
         countryCache = CountrySnapshotCache(store: SwiftDataCountryCacheStore())
@@ -33,7 +35,7 @@ public actor ApolloCountryRepository: CountryRepository {
 
     public init(
         networkTransport: any NetworkTransport,
-        cacheLifetime: TimeInterval = 15 * 60
+        cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime
     ) {
         let store = ApolloStore(cache: InMemoryNormalizedCache())
         client = ApolloClient(networkTransport: networkTransport, store: store)
@@ -44,7 +46,7 @@ public actor ApolloCountryRepository: CountryRepository {
     init(
         networkTransport: any NetworkTransport,
         cacheStore: any CountryCacheStore,
-        cacheLifetime: TimeInterval = 15 * 60
+        cacheLifetime: TimeInterval = ApolloCountryRepository.defaultCacheLifetime
     ) {
         let store = ApolloStore(cache: InMemoryNormalizedCache())
         client = ApolloClient(networkTransport: networkTransport, store: store)
