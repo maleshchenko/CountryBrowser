@@ -3,6 +3,8 @@ import CountryData
 import Foundation
 import Observation
 
+typealias DebouncedSearchPublisher = (AnyPublisher<String, Never>) -> AnyPublisher<String, Never>
+
 @MainActor
 @Observable
 final class CountryListViewModel {
@@ -23,11 +25,16 @@ final class CountryListViewModel {
     @ObservationIgnored private var searchSubscription: AnyCancellable?
     @ObservationIgnored private var activeRequest = UUID()
 
-    init(repository: any CountryRepository) {
+    init(
+        repository: any CountryRepository,
+        debouncedSearchPublisher: @escaping DebouncedSearchPublisher = {
+            $0.removeDuplicates()
+                .debounce(for: .milliseconds(350), scheduler: DispatchQueue.main)
+                .eraseToAnyPublisher()
+        }
+    ) {
         self.repository = repository
-        searchSubscription = searchInput
-            .removeDuplicates()
-            .debounce(for: .milliseconds(350), scheduler: DispatchQueue.main)
+        searchSubscription = debouncedSearchPublisher(searchInput.eraseToAnyPublisher())
             .sink { [weak self] search in
                 Task { @MainActor [weak self] in
                     await self?.load(matching: search)

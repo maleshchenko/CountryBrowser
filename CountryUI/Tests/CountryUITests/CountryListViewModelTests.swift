@@ -1,6 +1,8 @@
+import Combine
 import CountryData
 @testable import CountryUI
 import Foundation
+import Observation
 import Testing
 
 private actor MockCountryRepository: CountryRepository {
@@ -8,9 +10,11 @@ private actor MockCountryRepository: CountryRepository {
     private let detailCountry: Country?
     private var shouldFail: Bool
     private let repositoryError: CountryRepositoryError?
-    private let searchDelay: Duration
+    private let suspendedSearch: String?
     private let freshness: CountryListResult.Freshness
     private var searchRequests: [String] = []
+    private var searchRequestWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+    private var suspendedSearchContinuation: CheckedContinuation<Void, Never>?
     private var refreshRequestCount = 0
     private var detailRequests: [String] = []
 
@@ -19,21 +23,25 @@ private actor MockCountryRepository: CountryRepository {
         detailCountry: Country? = nil,
         shouldFail: Bool = false,
         repositoryError: CountryRepositoryError? = nil,
-        searchDelay: Duration = .zero,
+        suspendedSearch: String? = nil,
         freshness: CountryListResult.Freshness = .fresh
     ) {
         self.countries = countries
         self.detailCountry = detailCountry
         self.shouldFail = shouldFail
         self.repositoryError = repositoryError
-        self.searchDelay = searchDelay
+        self.suspendedSearch = suspendedSearch
         self.freshness = freshness
     }
 
     func countries(matching search: String) async throws -> CountryListResult {
         searchRequests.append(search)
-        if searchDelay > .zero {
-            try await Task.sleep(for: searchDelay)
+        let readyWaiters = searchRequestWaiters.filter { $0.0 <= searchRequests.count }
+        searchRequestWaiters.removeAll { $0.0 <= searchRequests.count }
+        readyWaiters.forEach { $0.1.resume() }
+
+        if search == suspendedSearch {
+            await withCheckedContinuation { suspendedSearchContinuation = $0 }
         }
         if let repositoryError {
             throw repositoryError
@@ -73,6 +81,20 @@ private actor MockCountryRepository: CountryRepository {
         searchRequests
     }
 
+    func waitForSearchRequestCount(_ count: Int) async {
+        guard searchRequests.count < count else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            searchRequestWaiters.append((count, continuation))
+        }
+    }
+
+    func resumeSuspendedSearch() {
+        suspendedSearchContinuation?.resume()
+        suspendedSearchContinuation = nil
+    }
+
     func recordedDetailRequests() -> [String] {
         detailRequests
     }
@@ -83,6 +105,35 @@ private actor MockCountryRepository: CountryRepository {
 
     func setShouldFail(_ shouldFail: Bool) {
         self.shouldFail = shouldFail
+    }
+}
+
+@MainActor
+private final class ControlledSearchPublisher {
+    private let subject = PassthroughSubject<String, Never>()
+
+    var publisher: AnyPublisher<String, Never> {
+        subject.eraseToAnyPublisher()
+    }
+
+    func send(_ search: String) {
+        subject.send(search)
+    }
+}
+
+@MainActor
+private func waitForState(
+    _ expectedState: CountryListViewModel.State,
+    in viewModel: CountryListViewModel
+) async {
+    while viewModel.state != expectedState {
+        await withCheckedContinuation { continuation in
+            withObservationTracking {
+                _ = viewModel.state
+            } onChange: {
+                continuation.resume()
+            }
+        }
     }
 }
 
@@ -204,42 +255,51 @@ struct CountryListViewModelTests {
     }
 
     @Test
-    func debouncesSearchBeforeRequestingResults() async throws {
+    func debouncesSearchBeforeRequestingResults() async {
         let repository = MockCountryRepository(countries: [japan, canada])
-        let viewModel = CountryListViewModel(repository: repository)
+        let debouncer = ControlledSearchPublisher()
+        let viewModel = CountryListViewModel(
+            repository: repository
+        )
 
         viewModel.updateSearch("jap")
-        try await Task.sleep(for: .milliseconds(150))
-
+        #expect(viewModel.searchText == "jap")
         #expect(await repository.recordedSearchRequests().isEmpty)
 
-        try await Task.sleep(for: .milliseconds(400))
+        debouncer.send("jap")
+        await repository.waitForSearchRequestCount(1)
+        await waitForState(.loaded([japan]), in: viewModel)
 
         #expect(await repository.recordedSearchRequests() == ["jap"])
         #expect(viewModel.state == .loaded([japan]))
     }
 
     @Test
-    func rapidSearchUpdatesOnlyRequestTheLatestTerm() async throws {
+    func rapidSearchUpdatesOnlyRequestTheLatestTerm() async {
         let repository = MockCountryRepository(countries: [japan, canada])
-        let viewModel = CountryListViewModel(repository: repository)
+        let debouncer = ControlledSearchPublisher()
+        let viewModel = CountryListViewModel(
+            repository: repository
+        )
 
         viewModel.updateSearch("j")
-        try await Task.sleep(for: .milliseconds(50))
         viewModel.updateSearch("ja")
-        try await Task.sleep(for: .milliseconds(50))
         viewModel.updateSearch("jap")
-        try await Task.sleep(for: .milliseconds(450))
+        #expect(await repository.recordedSearchRequests().isEmpty)
+
+        debouncer.send("jap")
+        await repository.waitForSearchRequestCount(1)
+        await waitForState(.loaded([japan]), in: viewModel)
 
         #expect(await repository.recordedSearchRequests() == ["jap"])
         #expect(viewModel.state == .loaded([japan]))
     }
 
     @Test
-    func keepsCurrentCountriesVisibleWhileSearchLoads() async throws {
+    func keepsCurrentCountriesVisibleWhileSearchLoads() async {
         let repository = MockCountryRepository(
             countries: [japan, canada],
-            searchDelay: .milliseconds(200)
+            suspendedSearch: "can"
         )
         let viewModel = CountryListViewModel(repository: repository)
         await viewModel.load()
@@ -247,27 +307,28 @@ struct CountryListViewModelTests {
         let searchTask = Task {
             await viewModel.load(matching: "can")
         }
-        for _ in 0 ..< 50 {
-            if await repository.recordedSearchRequests().count == 2 {
-                break
-            }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await repository.waitForSearchRequestCount(2)
 
         #expect(await repository.recordedSearchRequests() == ["", "can"])
         #expect(viewModel.state == .loaded([japan, canada]))
 
+        await repository.resumeSuspendedSearch()
         await searchTask.value
 
         #expect(viewModel.state == .loaded([canada]))
     }
 
     @Test
-    func refreshesCountriesUsingCurrentSearch() async throws {
+    func refreshesCountriesUsingCurrentSearch() async {
         let repository = MockCountryRepository(countries: [japan, canada])
-        let viewModel = CountryListViewModel(repository: repository)
+        let debouncer = ControlledSearchPublisher()
+        let viewModel = CountryListViewModel(
+            repository: repository
+        )
         viewModel.updateSearch("can")
-        try await Task.sleep(for: .milliseconds(400))
+        debouncer.send("can")
+        await repository.waitForSearchRequestCount(1)
+        await waitForState(.loaded([canada]), in: viewModel)
 
         await viewModel.refresh()
 

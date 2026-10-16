@@ -21,20 +21,43 @@ private final class DelayedResponse: @unchecked Sendable {
     }
 }
 
+private actor RequestMonitor {
+    private var requestCount = 0
+    private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
+
+    func recordRequest() {
+        requestCount += 1
+        let readyWaiters = waiters.filter { $0.0 <= requestCount }
+        waiters.removeAll { $0.0 <= requestCount }
+        readyWaiters.forEach { $0.1.resume() }
+    }
+
+    func waitForRequestCount(_ expectedCount: Int) async {
+        guard requestCount < expectedCount else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            waiters.append((expectedCount, continuation))
+        }
+    }
+}
+
 final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var responses: [JSONObject]
-    private let responseDelays: [TimeInterval]
+    private let blockedResponseIndexes: Set<Int>
+    private var pendingResponses: [Int: DelayedResponse] = [:]
     private let failure: (any Error)?
     private var requestCount = 0
+    private let requestMonitor = RequestMonitor()
 
     init(
         responses: [JSONObject],
-        responseDelays: [TimeInterval] = [],
+        blockedResponseIndexes: Set<Int> = [],
         failure: (any Error)? = nil
     ) {
         self.responses = responses
-        self.responseDelays = responseDelays
+        self.blockedResponseIndexes = blockedResponseIndexes
         self.failure = failure
     }
 
@@ -54,14 +77,16 @@ final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
     ) -> any Cancellable {
         lock.lock()
         requestCount += 1
+        let responseIndex = requestCount - 1
         if let failure {
             lock.unlock()
+            Task {
+                await requestMonitor.recordRequest()
+            }
             completionHandler(.failure(failure))
             return EmptyCancellable()
         }
-        let responseIndex = min(requestCount - 1, responses.count - 1)
-        let body = responses[responseIndex]
-        let responseDelay = responseIndex < responseDelays.count ? responseDelays[responseIndex] : 0
+        let body = responses[min(responseIndex, responses.count - 1)]
         lock.unlock()
 
         do {
@@ -70,22 +95,45 @@ final class MockNetworkTransport: NetworkTransport, @unchecked Sendable {
                 body: body
             )
             let (result, _) = try response.parseResult()
-            if responseDelay > 0 {
-                let delayedResponse = DelayedResponse(
-                    result: result,
-                    completionHandler: completionHandler
-                )
-                callbackQueue.asyncAfter(deadline: .now() + responseDelay) {
+            let delayedResponse = DelayedResponse(
+                result: result,
+                completionHandler: completionHandler
+            )
+            if blockedResponseIndexes.contains(responseIndex) {
+                lock.lock()
+                pendingResponses[responseIndex] = delayedResponse
+                lock.unlock()
+            } else {
+                callbackQueue.async {
                     delayedResponse.send()
                 }
-            } else {
-                completionHandler(.success(result))
+            }
+            Task {
+                await requestMonitor.recordRequest()
             }
         } catch {
+            Task {
+                await requestMonitor.recordRequest()
+            }
             completionHandler(.failure(error))
         }
 
         return EmptyCancellable()
+    }
+
+    func waitForRequestCount(_ expectedCount: Int) async {
+        await requestMonitor.waitForRequestCount(expectedCount)
+    }
+
+    func releaseResponse(at index: Int) -> Bool {
+        lock.lock()
+        let response = pendingResponses.removeValue(forKey: index)
+        lock.unlock()
+        guard let response else {
+            return false
+        }
+        response.send()
+        return true
     }
 }
 
@@ -150,19 +198,6 @@ private func countryListResponse(japanName: String = "Japan") throws -> JSONObje
             ]
         ]
     )
-}
-
-private func waitForRequestCount(
-    _ expectedCount: Int,
-    transport: MockNetworkTransport
-) async throws -> Bool {
-    for _ in 0 ..< 100 {
-        if transport.numberOfRequests >= expectedCount {
-            return true
-        }
-        try await Task.sleep(for: .milliseconds(10))
-    }
-    return transport.numberOfRequests >= expectedCount
 }
 
 struct ApolloCountryRepositoryTests {
@@ -286,23 +321,28 @@ struct ApolloCountryRepositoryTests {
     func coalescesConcurrentCountryRequests() async throws {
         let transport = try MockNetworkTransport(
             responses: [countryListResponse()],
-            responseDelays: [0.1]
+            blockedResponseIndexes: [0]
         )
         let repository = ApolloCountryRepository(networkTransport: transport)
 
-        let results = try await withThrowingTaskGroup(of: CountryListResult.self) { group in
-            for _ in 0 ..< 5 {
-                group.addTask {
-                    try await repository.countries(matching: "")
+        let resultsTask = Task {
+            try await withThrowingTaskGroup(of: CountryListResult.self) { group in
+                for _ in 0 ..< 5 {
+                    group.addTask {
+                        try await repository.countries(matching: "")
+                    }
                 }
-            }
 
-            var results: [CountryListResult] = []
-            for try await result in group {
-                results.append(result)
+                var results: [CountryListResult] = []
+                for try await result in group {
+                    results.append(result)
+                }
+                return results
             }
-            return results
         }
+        await transport.waitForRequestCount(1)
+        #expect(transport.releaseResponse(at: 0))
+        let results = try await resultsTask.value
 
         #expect(results.count == 5)
         #expect(results.allSatisfy { $0.countries.map(\.code) == ["JP", "CA"] })
@@ -316,20 +356,22 @@ struct ApolloCountryRepositoryTests {
                 countryListResponse(),
                 countryListResponse(japanName: "Nippon")
             ],
-            responseDelays: [0.2, 0.05]
+            blockedResponseIndexes: [0, 1]
         )
         let repository = ApolloCountryRepository(networkTransport: transport)
         let initialRequest = Task {
             try await repository.countries(matching: "")
         }
 
-        #expect(try await waitForRequestCount(1, transport: transport))
+        await transport.waitForRequestCount(1)
         let refreshRequest = Task {
             try await repository.refreshCountries()
         }
-        #expect(try await waitForRequestCount(2, transport: transport))
+        await transport.waitForRequestCount(2)
 
+        #expect(transport.releaseResponse(at: 1))
         let refreshedCountries = try await refreshRequest.value
+        #expect(transport.releaseResponse(at: 0))
         let initialCountries = try await initialRequest.value
         let cachedCountries = try await repository.countries(matching: "")
 
@@ -343,23 +385,28 @@ struct ApolloCountryRepositoryTests {
     func coalescesConcurrentRefreshRequests() async throws {
         let transport = try MockNetworkTransport(
             responses: [countryListResponse(japanName: "Nippon")],
-            responseDelays: [0.1]
+            blockedResponseIndexes: [0]
         )
         let repository = ApolloCountryRepository(networkTransport: transport)
 
-        let results = try await withThrowingTaskGroup(of: CountryListResult.self) { group in
-            for _ in 0 ..< 3 {
-                group.addTask {
-                    try await repository.refreshCountries()
+        let resultsTask = Task {
+            try await withThrowingTaskGroup(of: CountryListResult.self) { group in
+                for _ in 0 ..< 3 {
+                    group.addTask {
+                        try await repository.refreshCountries()
+                    }
                 }
-            }
 
-            var results: [CountryListResult] = []
-            for try await result in group {
-                results.append(result)
+                var results: [CountryListResult] = []
+                for try await result in group {
+                    results.append(result)
+                }
+                return results
             }
-            return results
         }
+        await transport.waitForRequestCount(1)
+        #expect(transport.releaseResponse(at: 0))
+        let results = try await resultsTask.value
 
         #expect(results.count == 3)
         #expect(results.allSatisfy { $0.countries.first?.name == "Nippon" })
